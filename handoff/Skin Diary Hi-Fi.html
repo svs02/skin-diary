@@ -1,0 +1,1255 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>피부일기 — Hi-Fi</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700&family=Noto+Sans+KR:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+<script type="text/babel" src="design-canvas.jsx"></script>
+<script type="text/babel" src="tweaks-panel.jsx"></script>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { background: #e8eaf0; }
+</style>
+</head>
+<body>
+<script type="text/babel">
+
+/* ─── Design Tokens ─── */
+const C = {
+  light: {
+    bg: '#F2F5FA',
+    surface: '#FFFFFF',
+    s2: '#EDF0F7',
+    s3: '#E0E6F0',
+    t1: '#18202E',
+    t2: '#5A6378',
+    t3: '#9BA3BC',
+    accent: '#6DBF8A',
+    accentDim: '#DCF0E5',
+    accentText: '#26694A',
+    border: 'rgba(80,110,170,0.1)',
+    sh: '0 2px 12px rgba(20,35,70,0.07)',
+    shLg: '0 8px 32px rgba(20,35,70,0.1)',
+    navBg: 'rgba(255,255,255,0.95)',
+  },
+  dark: {
+    bg: '#0C0F1A',
+    surface: '#141826',
+    s2: '#1B2135',
+    s3: '#232C42',
+    t1: '#EEF2FA',
+    t2: '#8890AA',
+    t3: '#44506A',
+    accent: '#72C98E',
+    accentDim: '#162B22',
+    accentText: '#72C98E',
+    border: 'rgba(100,140,220,0.07)',
+    sh: '0 2px 12px rgba(0,0,0,0.25)',
+    shLg: '0 8px 40px rgba(0,0,0,0.35)',
+    navBg: 'rgba(20,24,38,0.97)',
+  }
+};
+
+const FONT_KO = "'Noto Sans KR', sans-serif";
+const FONT_NUM = "'DM Sans', 'Noto Sans KR', sans-serif";
+
+/* ─── Phone Shell ─── */
+function PhoneShell({ children, dark = false, alwaysDark = false }) {
+  const isDark = alwaysDark || dark;
+  const shellBg = isDark ? '#0C0F1A' : '#F2F5FA';
+  const rimColor = isDark ? '#1e2540' : '#d0d8ea';
+  return (
+    <div style={{
+      width: 375, borderRadius: 50,
+      background: shellBg,
+      border: `1.5px solid ${rimColor}`,
+      overflow: 'hidden', position: 'relative',
+      boxShadow: isDark
+        ? `0 0 0 8px #181e30, 0 40px 100px rgba(0,0,0,0.7)`
+        : `0 0 0 8px #cdd5e8, 0 40px 100px rgba(20,40,90,0.18)`,
+    }}>
+      {/* Dynamic Island */}
+      <div style={{
+        position: 'absolute', top: 13, left: '50%', transform: 'translateX(-50%)',
+        width: 118, height: 36, background: '#050507',
+        borderRadius: 22, zIndex: 20,
+      }}/>
+      {/* Status bar row */}
+      <div style={{
+        height: 56, display: 'flex', alignItems: 'flex-end',
+        justifyContent: 'space-between', padding: '0 28px 8px',
+        position: 'relative', zIndex: 5,
+      }}>
+        <span style={{ fontSize: 13, fontWeight: 600, fontFamily: FONT_NUM, color: isDark ? 'rgba(255,255,255,0.75)' : 'rgba(0,0,0,0.6)' }}>9:41</span>
+        <div style={{ display: 'flex', gap: 5, alignItems: 'center' }}>
+          {/* Signal */}
+          {[3,5,7,9].map((h,i) => (
+            <div key={i} style={{ width: 3, height: h, borderRadius: 1.5, background: i < 3 ? (isDark ? 'rgba(255,255,255,0.7)' : 'rgba(0,0,0,0.55)') : (isDark ? 'rgba(255,255,255,0.2)' : 'rgba(0,0,0,0.2)') }}/>
+          ))}
+          {/* Battery */}
+          <div style={{ width: 22, height: 11, border: `1.5px solid ${isDark ? 'rgba(255,255,255,0.5)' : 'rgba(0,0,0,0.4)'}`, borderRadius: 3, position: 'relative', marginLeft: 2 }}>
+            <div style={{ position: 'absolute', right: -4, top: '50%', transform: 'translateY(-50%)', width: 3, height: 6, background: isDark ? 'rgba(255,255,255,0.3)' : 'rgba(0,0,0,0.25)', borderRadius: '0 2px 2px 0' }}/>
+            <div style={{ margin: 1.5, height: 6, width: '70%', background: isDark ? 'rgba(255,255,255,0.7)' : 'rgba(0,0,0,0.5)', borderRadius: 1 }}/>
+          </div>
+        </div>
+      </div>
+      {/* Content */}
+      <div style={{ position: 'relative' }}>{children}</div>
+      {/* Home bar */}
+      <div style={{ display: 'flex', justifyContent: 'center', padding: '10px 0 12px', background: shellBg }}>
+        <div style={{ width: 130, height: 5, borderRadius: 3, background: isDark ? 'rgba(255,255,255,0.18)' : 'rgba(0,0,0,0.14)' }}/>
+      </div>
+    </div>
+  );
+}
+
+/* ─── Bottom Nav ─── */
+function NavBar({ active = 0, dark = false }) {
+  const c = C[dark ? 'dark' : 'light'];
+  const navItems = [
+    { label: '홈', icon: (a) => (
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+        <path d="M4 10.5L12 4L20 10.5V20H15.5V15H8.5V20H4V10.5Z"
+          stroke={a ? c.accent : c.t3} strokeWidth="1.6" strokeLinejoin="round"
+          fill={a ? c.accentDim : 'none'}/>
+      </svg>
+    )},
+    { label: '기록', icon: (a) => (
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+        <rect x="3" y="7" width="18" height="13" rx="3" stroke={a ? c.accent : c.t3} strokeWidth="1.6" fill={a ? c.accentDim : 'none'}/>
+        <circle cx="12" cy="13.5" r="3.5" stroke={a ? c.accent : c.t3} strokeWidth="1.6"/>
+        <path d="M9 7L10.2 4.5H13.8L15 7" stroke={a ? c.accent : c.t3} strokeWidth="1.6" strokeLinecap="round"/>
+      </svg>
+    )},
+    { label: '갤러리', icon: (a) => (
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+        <rect x="3" y="3" width="7.5" height="7.5" rx="2" stroke={a ? c.accent : c.t3} strokeWidth="1.6" fill={a ? c.accentDim : 'none'}/>
+        <rect x="13.5" y="3" width="7.5" height="7.5" rx="2" stroke={a ? c.accent : c.t3} strokeWidth="1.6" fill={a ? c.accentDim : 'none'}/>
+        <rect x="3" y="13.5" width="7.5" height="7.5" rx="2" stroke={a ? c.accent : c.t3} strokeWidth="1.6" fill={a ? c.accentDim : 'none'}/>
+        <rect x="13.5" y="13.5" width="7.5" height="7.5" rx="2" stroke={a ? c.accent : c.t3} strokeWidth="1.6" fill={a ? c.accentDim : 'none'}/>
+      </svg>
+    )},
+    { label: '비교', icon: (a) => (
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+        <path d="M9 5L4 12L9 19" stroke={a ? c.accent : c.t3} strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"/>
+        <path d="M15 5L20 12L15 19" stroke={a ? c.accent : c.t3} strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"/>
+        <line x1="12" y1="5" x2="12" y2="19" stroke={a ? c.accent : c.t3} strokeWidth="1.3" strokeDasharray="2.5 2.5"/>
+      </svg>
+    )},
+  ];
+  return (
+    <div style={{
+      display: 'flex', background: c.navBg,
+      borderTop: `1px solid ${c.border}`,
+      backdropFilter: 'blur(20px)', WebkitBackdropFilter: 'blur(20px)',
+      padding: '8px 0 2px',
+    }}>
+      {navItems.map((item, i) => (
+        <div key={i} style={{
+          flex: 1, display: 'flex', flexDirection: 'column',
+          alignItems: 'center', gap: 2, paddingBottom: 2,
+          cursor: 'pointer',
+        }}>
+          {item.icon(i === active)}
+          <span style={{ fontSize: 10, fontFamily: FONT_KO, fontWeight: i === active ? 600 : 400, color: i === active ? c.accent : c.t3, letterSpacing: '-0.2px' }}>{item.label}</span>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+/* ─── Week Strip ─── */
+function WeekStrip({ dark, todayIdx = 2, recordedDays = [true,true,true,false,true,false,false] }) {
+  const c = C[dark ? 'dark' : 'light'];
+  const days = ['월','화','수','목','금','토','일'];
+  return (
+    <div style={{ display: 'flex', gap: 4 }}>
+      {days.map((d, i) => {
+        const isToday = i === todayIdx;
+        const hasRec = recordedDays[i];
+        return (
+          <div key={i} style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 5 }}>
+            <div style={{
+              width: 36, height: 36, borderRadius: '50%',
+              border: isToday ? `2px solid ${c.accent}` : 'none',
+              background: hasRec && !isToday ? c.s3 : isToday ? c.accentDim : 'transparent',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+            }}>
+              {(hasRec || isToday) && (
+                <div style={{ width: isToday ? 8 : 6, height: isToday ? 8 : 6, borderRadius: '50%', background: isToday ? c.accent : c.t3 }}/>
+              )}
+            </div>
+            <span style={{ fontSize: 10, fontFamily: FONT_KO, color: isToday ? c.accent : c.t3, fontWeight: isToday ? 600 : 400 }}>{d}</span>
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
+/* ─── Chip ─── */
+function Chip({ label, variant = 'default', dark }) {
+  const c = C[dark ? 'dark' : 'light'];
+  const bg = variant === 'accent' ? c.accentDim : c.s2;
+  const color = variant === 'accent' ? c.accentText : c.t2;
+  return (
+    <span style={{ fontSize: 11, fontFamily: FONT_KO, background: bg, color, borderRadius: 8, padding: '4px 9px', display: 'inline-block' }}>{label}</span>
+  );
+}
+
+/* ─── Photo Slot ─── */
+function PhotoSlot({ angle, filled = false, dark }) {
+  const c = C[dark ? 'dark' : 'light'];
+  return (
+    <div style={{
+      flex: 1, aspectRatio: '3/4', borderRadius: 14,
+      border: filled ? 'none' : `1.5px dashed ${c.s3}`,
+      background: filled ? (dark ? '#262e46' : '#D2D8E8') : c.s2,
+      display: 'flex', flexDirection: 'column',
+      alignItems: 'center', justifyContent: 'center', gap: 6,
+      overflow: 'hidden', position: 'relative',
+    }}>
+      {filled ? (
+        <>
+          <div style={{ width: 36, height: 36, borderRadius: '50%', background: dark ? '#3d4a65' : '#b8c2d8', position: 'absolute', bottom: 18 }}/>
+          <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, height: 36, background: dark ? 'rgba(30,38,60,0.7)' : 'rgba(200,210,228,0.6)' }}/>
+        </>
+      ) : (
+        <>
+          <div style={{ width: 22, height: 22, borderRadius: '50%', border: `1.5px dashed ${c.t3}` }}/>
+          <span style={{ fontSize: 10, fontFamily: FONT_KO, color: c.t3 }}>{angle}</span>
+        </>
+      )}
+    </div>
+  );
+}
+
+/* ─── Screen: Home Empty ─── */
+function HomeEmpty({ dark = false }) {
+  const c = C[dark ? 'dark' : 'light'];
+  return (
+    <div style={{ background: c.bg, fontFamily: FONT_KO, display: 'flex', flexDirection: 'column', minHeight: 700 }}>
+      {/* Header */}
+      <div style={{ padding: '12px 24px 18px' }}>
+        <div style={{ fontSize: 13, color: c.t3, marginBottom: 2 }}>2026년 4월</div>
+        <div style={{ display: 'flex', alignItems: 'baseline', gap: 10, marginBottom: 18 }}>
+          <span style={{ fontFamily: FONT_NUM, fontSize: 58, fontWeight: 700, lineHeight: 1, color: c.t1, letterSpacing: '-3px' }}>29</span>
+          <div>
+            <div style={{ fontSize: 20, fontWeight: 600, color: c.t1, letterSpacing: '-0.5px' }}>수요일</div>
+            <div style={{ fontSize: 12, color: c.t3 }}>오늘</div>
+          </div>
+        </div>
+        <WeekStrip dark={dark} />
+        <div style={{ marginTop: 8, fontSize: 12, color: c.t3 }}>이번 주 4일 기록 중</div>
+      </div>
+
+      <div style={{ height: 1, background: c.border, margin: '0 24px' }}/>
+
+      {/* Body */}
+      <div style={{ padding: '18px 20px', display: 'flex', flexDirection: 'column', gap: 12, flex: 1 }}>
+        {/* Today card */}
+        <div style={{ background: c.surface, borderRadius: 22, padding: '18px 18px 16px', boxShadow: c.shLg, border: `1px solid ${c.border}` }}>
+          <div style={{ fontSize: 11, letterSpacing: '0.6px', textTransform: 'uppercase', color: c.t3, fontWeight: 500, marginBottom: 6 }}>오늘 기록</div>
+          <div style={{ fontSize: 16, fontWeight: 600, color: c.t1, marginBottom: 14, letterSpacing: '-0.3px' }}>아직 안 찍었어요</div>
+          <div style={{ display: 'flex', gap: 8, marginBottom: 14 }}>
+            <PhotoSlot angle="정면" dark={dark}/>
+            <PhotoSlot angle="좌" dark={dark}/>
+            <PhotoSlot angle="우" dark={dark}/>
+          </div>
+          <button style={{
+            width: '100%', padding: '14px 0',
+            background: c.accent, border: 'none', borderRadius: 14,
+            fontSize: 15, fontWeight: 600, fontFamily: FONT_KO,
+            color: '#fff', cursor: 'pointer', letterSpacing: '-0.3px',
+          }}>오늘 기록하기</button>
+          <div style={{ textAlign: 'center', marginTop: 10, fontSize: 11, color: c.t3 }}>사진 없이 저장해도 돼요</div>
+        </div>
+
+        {/* Yesterday preview */}
+        <div style={{ background: c.surface, borderRadius: 18, padding: '14px 16px', boxShadow: c.sh, border: `1px solid ${c.border}` }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
+            <span style={{ fontSize: 13, fontWeight: 500, color: c.t1 }}>어제 · 28일</span>
+            <span style={{ fontSize: 12, color: c.accent, fontWeight: 500 }}>보기</span>
+          </div>
+          <div style={{ display: 'flex', gap: 6 }}>
+            <PhotoSlot angle="정면" filled dark={dark}/>
+            <PhotoSlot angle="좌" filled dark={dark}/>
+            <PhotoSlot angle="우" filled dark={dark}/>
+          </div>
+          <div style={{ display: 'flex', gap: 6, marginTop: 10, flexWrap: 'wrap' }}>
+            <Chip label="물 6잔" dark={dark}/>
+            <Chip label="운동" variant="accent" dark={dark}/>
+            <Chip label="선크림" variant="accent" dark={dark}/>
+          </div>
+        </div>
+      </div>
+      <NavBar active={0} dark={dark}/>
+    </div>
+  );
+}
+
+/* ─── Screen: Home Recorded ─── */
+function HomeRecorded({ dark = false }) {
+  const c = C[dark ? 'dark' : 'light'];
+  return (
+    <div style={{ background: c.bg, fontFamily: FONT_KO, display: 'flex', flexDirection: 'column', minHeight: 700 }}>
+      <div style={{ padding: '12px 24px 18px' }}>
+        <div style={{ fontSize: 13, color: c.t3, marginBottom: 2 }}>2026년 4월</div>
+        <div style={{ display: 'flex', alignItems: 'baseline', gap: 10, marginBottom: 18 }}>
+          <span style={{ fontFamily: FONT_NUM, fontSize: 58, fontWeight: 700, lineHeight: 1, color: c.t1, letterSpacing: '-3px' }}>29</span>
+          <div>
+            <div style={{ fontSize: 20, fontWeight: 600, color: c.t1, letterSpacing: '-0.5px' }}>수요일</div>
+            <div style={{ fontSize: 12, color: c.t3 }}>오늘</div>
+          </div>
+        </div>
+        <WeekStrip dark={dark} recordedDays={[true,true,true,false,true,false,true]}/>
+        <div style={{ marginTop: 8, fontSize: 12, color: c.t3 }}>이번 주 5일 기록 중</div>
+      </div>
+
+      <div style={{ height: 1, background: c.border, margin: '0 24px' }}/>
+
+      <div style={{ padding: '18px 20px', display: 'flex', flexDirection: 'column', gap: 12, flex: 1 }}>
+        {/* Completed today card */}
+        <div style={{ background: c.surface, borderRadius: 22, padding: '18px 18px 16px', boxShadow: c.shLg, border: `1px solid ${c.border}` }}>
+          {/* Done badge */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 10 }}>
+            <div style={{ width: 18, height: 18, borderRadius: '50%', background: c.accentDim, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <svg width="10" height="10" viewBox="0 0 10 10" fill="none">
+                <path d="M2 5L4.2 7.5L8 3" stroke={c.accent} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+              </svg>
+            </div>
+            <span style={{ fontSize: 12, fontWeight: 600, color: c.accentText }}>오늘 기록 완료</span>
+          </div>
+
+          <div style={{ display: 'flex', gap: 8, marginBottom: 14 }}>
+            <PhotoSlot angle="정면" filled dark={dark}/>
+            <PhotoSlot angle="좌" filled dark={dark}/>
+            <PhotoSlot angle="우" filled dark={dark}/>
+          </div>
+
+          <div style={{ display: 'flex', gap: 8 }}>
+            <button style={{
+              flex: 1, padding: '12px 0',
+              background: 'transparent',
+              border: `1.5px solid ${c.border}`,
+              borderRadius: 12, fontSize: 14, fontFamily: FONT_KO,
+              fontWeight: 500, color: c.t2, cursor: 'pointer',
+            }}>수정</button>
+            <button style={{
+              flex: 2, padding: '12px 0',
+              background: c.accent, border: 'none', borderRadius: 12,
+              fontSize: 14, fontFamily: FONT_KO, fontWeight: 600,
+              color: '#fff', cursor: 'pointer',
+            }}>비교해보기</button>
+          </div>
+        </div>
+
+        {/* Lifestyle summary */}
+        <div style={{ background: c.surface, borderRadius: 18, padding: '14px 16px', boxShadow: c.sh, border: `1px solid ${c.border}` }}>
+          <div style={{ fontSize: 13, fontWeight: 500, color: c.t1, marginBottom: 10 }}>오늘 생활 기록</div>
+          <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+            <Chip label="물 7잔" variant="accent" dark={dark}/>
+            <Chip label="운동" variant="accent" dark={dark}/>
+            <Chip label="선크림" variant="accent" dark={dark}/>
+            <Chip label="유제품" dark={dark}/>
+          </div>
+          <div style={{ marginTop: 10, padding: '10px 12px', background: c.s2, borderRadius: 10 }}>
+            <span style={{ fontSize: 12, color: c.t2, fontStyle: 'italic' }}>"코 옆이 살짝 건조했음"</span>
+          </div>
+        </div>
+      </div>
+      <NavBar active={0} dark={dark}/>
+    </div>
+  );
+}
+
+/* ─── Screen: Camera Guide ─── */
+function CameraGuide() {
+  const conditions = [
+    { label: '조명 충분', ok: true },
+    { label: '얼굴 가이드 안에', ok: true },
+    { label: '정면 응시', ok: false },
+  ];
+  return (
+    <div style={{ background: '#0A0A0F', fontFamily: FONT_KO, display: 'flex', flexDirection: 'column', minHeight: 700 }}>
+      {/* Top bar */}
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '8px 22px 10px' }}>
+        <span style={{ fontSize: 14, color: 'rgba(255,255,255,0.45)', fontFamily: FONT_KO }}>취소</span>
+        <span style={{ fontSize: 15, fontWeight: 600, color: '#fff', fontFamily: FONT_KO }}>정면</span>
+        <div style={{ width: 28, height: 28, borderRadius: '50%', background: 'rgba(255,255,255,0.08)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          <span style={{ fontSize: 12, color: 'rgba(255,255,255,0.5)' }}>?</span>
+        </div>
+      </div>
+
+      {/* Angle progress */}
+      <div style={{ display: 'flex', justifyContent: 'center', gap: 20, padding: '0 0 14px' }}>
+        {[{label:'정면', active:true, done:false}, {label:'좌측', active:false, done:false}, {label:'우측', active:false, done:false}].map((a, i) => (
+          <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+            <div style={{
+              width: 6, height: 6, borderRadius: '50%',
+              background: a.active ? '#72C98E' : 'rgba(255,255,255,0.2)',
+            }}/>
+            <span style={{ fontSize: 11, fontFamily: FONT_KO, color: a.active ? '#fff' : 'rgba(255,255,255,0.3)', fontWeight: a.active ? 500 : 400 }}>{a.label}</span>
+          </div>
+        ))}
+      </div>
+
+      {/* Viewfinder */}
+      <div style={{ flex: 1, position: 'relative', margin: '0 14px', borderRadius: 24, overflow: 'hidden', background: '#111118', minHeight: 340 }}>
+        {/* Subtle radial bg */}
+        <div style={{ position: 'absolute', inset: 0, background: 'radial-gradient(ellipse 60% 75% at 50% 50%, rgba(50,60,90,0.4) 0%, rgba(5,5,10,0.9) 100%)' }}/>
+
+        {/* Face guide SVG */}
+        <svg style={{ position: 'absolute', inset: 0, width: '100%', height: '100%' }} viewBox="0 0 347 360" preserveAspectRatio="xMidYMid meet">
+          <defs>
+            <radialGradient id="glowGrad" cx="50%" cy="50%" r="50%">
+              <stop offset="0%" stopColor="rgba(114,201,142,0.08)"/>
+              <stop offset="100%" stopColor="rgba(114,201,142,0)"/>
+            </radialGradient>
+            <mask id="ovalMask">
+              <rect width="347" height="360" fill="white"/>
+              <ellipse cx="173" cy="175" rx="98" ry="122" fill="black"/>
+            </mask>
+          </defs>
+          {/* Dim overlay outside oval */}
+          <rect width="347" height="360" fill="rgba(5,5,10,0.45)" mask="url(#ovalMask)"/>
+          {/* Glow inside oval */}
+          <ellipse cx="173" cy="175" rx="98" ry="122" fill="url(#glowGrad)"/>
+          {/* Oval guide */}
+          <ellipse cx="173" cy="175" rx="98" ry="122"
+            fill="none" stroke="rgba(114,201,142,0.7)" strokeWidth="1.5"
+            strokeDasharray="8 5"/>
+          {/* Eye level guide */}
+          <line x1="50" y1="148" x2="297" y2="148"
+            stroke="rgba(255,210,50,0.5)" strokeWidth="1" strokeDasharray="5 4"/>
+          <text x="304" y="152" fill="rgba(255,210,50,0.7)" fontSize="8.5" fontFamily="'Noto Sans KR', sans-serif">눈높이</text>
+          {/* Corner brackets */}
+          {[[60,48,1,1],[287,48,-1,1],[60,310,1,-1],[287,310,-1,-1]].map(([x,y,dx,dy],i) => (
+            <g key={i} stroke="rgba(255,255,255,0.35)" strokeWidth="1.5" strokeLinecap="round">
+              <line x1={x} y1={y} x2={x+dx*14} y2={y}/>
+              <line x1={x} y1={y} x2={x} y2={y+dy*14}/>
+            </g>
+          ))}
+        </svg>
+
+        {/* Condition list */}
+        <div style={{ position: 'absolute', bottom: 16, left: 16, display: 'flex', flexDirection: 'column', gap: 5 }}>
+          {conditions.map((cond, i) => (
+            <div key={i} style={{
+              display: 'flex', alignItems: 'center', gap: 7,
+              background: 'rgba(0,0,0,0.55)', backdropFilter: 'blur(10px)',
+              borderRadius: 20, padding: '5px 10px',
+            }}>
+              <div style={{
+                width: 14, height: 14, borderRadius: '50%',
+                background: cond.ok ? 'rgba(114,201,142,0.25)' : 'rgba(255,160,40,0.2)',
+                border: `1px solid ${cond.ok ? 'rgba(114,201,142,0.8)' : 'rgba(255,160,40,0.7)'}`,
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+              }}>
+                {cond.ok
+                  ? <svg width="8" height="8" viewBox="0 0 8 8"><path d="M1.5 4L3.2 6L6.5 2.5" stroke="#72C98E" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round" fill="none"/></svg>
+                  : <div style={{ width: 4, height: 4, borderRadius: '50%', background: 'rgba(255,160,40,0.9)' }}/>
+                }
+              </div>
+              <span style={{ fontSize: 11, fontFamily: FONT_KO, color: cond.ok ? 'rgba(255,255,255,0.85)' : 'rgba(255,190,80,0.9)' }}>{cond.label}</span>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* Shutter area */}
+      <div style={{ padding: '18px 0 10px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 0 }}>
+        {/* Gallery */}
+        <div style={{ flex: 1, display: 'flex', justifyContent: 'center' }}>
+          <div style={{ width: 46, height: 46, borderRadius: 12, background: 'rgba(255,255,255,0.07)', border: '1px solid rgba(255,255,255,0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+            <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+              <rect x="2" y="2" width="6" height="6" rx="1.5" stroke="rgba(255,255,255,0.5)" strokeWidth="1.3"/>
+              <rect x="12" y="2" width="6" height="6" rx="1.5" stroke="rgba(255,255,255,0.5)" strokeWidth="1.3"/>
+              <rect x="2" y="12" width="6" height="6" rx="1.5" stroke="rgba(255,255,255,0.5)" strokeWidth="1.3"/>
+              <rect x="12" y="12" width="6" height="6" rx="1.5" stroke="rgba(255,255,255,0.5)" strokeWidth="1.3"/>
+            </svg>
+          </div>
+        </div>
+        {/* Shutter */}
+        <div style={{ flex: 1, display: 'flex', justifyContent: 'center' }}>
+          <div style={{
+            width: 68, height: 68, borderRadius: '50%',
+            border: '3px solid rgba(255,255,255,0.85)',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            cursor: 'pointer',
+          }}>
+            <div style={{ width: 54, height: 54, borderRadius: '50%', background: '#fff' }}/>
+          </div>
+        </div>
+        {/* Flip */}
+        <div style={{ flex: 1, display: 'flex', justifyContent: 'center' }}>
+          <div style={{ width: 46, height: 46, borderRadius: 12, background: 'rgba(255,255,255,0.07)', border: '1px solid rgba(255,255,255,0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+            <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+              <path d="M3 7C4.5 4 7.5 2.5 11 2.5C15 2.5 17.5 5.5 17.5 9" stroke="rgba(255,255,255,0.5)" strokeWidth="1.3" strokeLinecap="round"/>
+              <path d="M17 13C15.5 16 12.5 17.5 9 17.5C5 17.5 2.5 14.5 2.5 11" stroke="rgba(255,255,255,0.5)" strokeWidth="1.3" strokeLinecap="round"/>
+              <path d="M3 10L3 7L6 7" stroke="rgba(255,255,255,0.5)" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round"/>
+              <path d="M17 10L17 13L14 13" stroke="rgba(255,255,255,0.5)" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round"/>
+            </svg>
+          </div>
+        </div>
+      </div>
+      <div style={{ textAlign: 'center', paddingBottom: 12 }}>
+        <span style={{ fontSize: 11, fontFamily: FONT_KO, color: 'rgba(255,255,255,0.28)' }}>안 찍어도 돼요 — 저장하고 넘어가기</span>
+      </div>
+    </div>
+  );
+}
+
+/* ─── Screen: Camera Angle Switch ─── */
+function CameraAngleSwitch() {
+  return (
+    <div style={{ background: '#0A0A0F', fontFamily: FONT_KO, display: 'flex', flexDirection: 'column', minHeight: 700 }}>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '8px 22px 10px' }}>
+        <span style={{ fontSize: 14, color: 'rgba(255,255,255,0.45)' }}>취소</span>
+        <span style={{ fontSize: 15, fontWeight: 600, color: '#fff' }}>좌측</span>
+        <div style={{ width: 28, height: 28, borderRadius: '50%', background: 'rgba(255,255,255,0.08)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          <span style={{ fontSize: 12, color: 'rgba(255,255,255,0.5)' }}>?</span>
+        </div>
+      </div>
+
+      {/* Angle progress — 정면 done */}
+      <div style={{ display: 'flex', justifyContent: 'center', gap: 20, padding: '0 0 10px' }}>
+        {[
+          {label:'정면', active:false, done:true},
+          {label:'좌측', active:true, done:false},
+          {label:'우측', active:false, done:false},
+        ].map((a, i) => (
+          <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+            <div style={{
+              width: 16, height: 16, borderRadius: '50%',
+              background: a.done ? '#72C98E' : a.active ? 'rgba(255,255,255,0.15)' : 'rgba(255,255,255,0.05)',
+              border: a.active ? '1.5px solid rgba(255,255,255,0.5)' : 'none',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+            }}>
+              {a.done && <svg width="8" height="8" viewBox="0 0 8 8"><path d="M1.5 4L3.2 6L6.5 2.5" stroke="#fff" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round" fill="none"/></svg>}
+            </div>
+            <span style={{ fontSize: 11, fontFamily: FONT_KO, color: a.done ? '#72C98E' : a.active ? '#fff' : 'rgba(255,255,255,0.25)', fontWeight: a.active ? 500 : 400 }}>{a.label}</span>
+          </div>
+        ))}
+      </div>
+
+      {/* Toast */}
+      <div style={{ margin: '0 14px 10px', background: 'rgba(114,201,142,0.12)', border: '1px solid rgba(114,201,142,0.25)', borderRadius: 14, padding: '10px 14px', display: 'flex', alignItems: 'center', gap: 10 }}>
+        <div style={{ width: 18, height: 18, borderRadius: '50%', background: 'rgba(114,201,142,0.2)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+          <svg width="10" height="10" viewBox="0 0 10 10" fill="none"><path d="M2 5L4.2 7.5L8 3" stroke="#72C98E" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg>
+        </div>
+        <span style={{ fontSize: 12, fontFamily: FONT_KO, color: 'rgba(255,255,255,0.85)' }}>정면 완료! 이제 왼쪽으로 돌아보세요</span>
+      </div>
+
+      {/* Viewfinder */}
+      <div style={{ flex: 1, position: 'relative', margin: '0 14px', borderRadius: 24, overflow: 'hidden', background: '#111118', minHeight: 300 }}>
+        <div style={{ position: 'absolute', inset: 0, background: 'radial-gradient(ellipse 55% 70% at 58% 50%, rgba(50,60,90,0.4) 0%, rgba(5,5,10,0.9) 100%)' }}/>
+
+        <svg style={{ position: 'absolute', inset: 0, width: '100%', height: '100%' }} viewBox="0 0 347 330" preserveAspectRatio="xMidYMid meet">
+          <defs>
+            <mask id="ovalMask2">
+              <rect width="347" height="330" fill="white"/>
+              <ellipse cx="190" cy="162" rx="88" ry="110" fill="black"/>
+            </mask>
+          </defs>
+          <rect width="347" height="330" fill="rgba(5,5,10,0.45)" mask="url(#ovalMask2)"/>
+          {/* Shifted oval for side angle */}
+          <ellipse cx="190" cy="162" rx="88" ry="110" fill="none" stroke="rgba(114,201,142,0.6)" strokeWidth="1.5" strokeDasharray="8 5"/>
+          {/* Rotation arrow guide */}
+          <path d="M 95 162 Q 75 120 108 95" fill="none" stroke="rgba(255,210,50,0.6)" strokeWidth="1.5"/>
+          <polygon points="102,86 113,97 118,83" fill="rgba(255,210,50,0.6)"/>
+          <text x="48" y="185" fill="rgba(255,210,50,0.7)" fontSize="9" fontFamily="'Noto Sans KR', sans-serif">왼쪽으로</text>
+          <text x="48" y="198" fill="rgba(255,210,50,0.7)" fontSize="9" fontFamily="'Noto Sans KR', sans-serif">돌아보세요</text>
+        </svg>
+
+        {/* Completed front thumbnail */}
+        <div style={{ position: 'absolute', top: 12, right: 12, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4 }}>
+          <div style={{ width: 44, height: 56, borderRadius: 10, background: '#2a3448', border: '2px solid #72C98E', display: 'flex', alignItems: 'flex-end', justifyContent: 'center', overflow: 'hidden', paddingBottom: 6 }}>
+            <div style={{ width: 24, height: 24, borderRadius: '50%', background: '#3d4d68' }}/>
+          </div>
+          <span style={{ fontSize: 9, fontFamily: FONT_KO, color: '#72C98E' }}>정면 ✓</span>
+        </div>
+      </div>
+
+      {/* Shutter */}
+      <div style={{ padding: '16px 0 10px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+        <div style={{ flex: 1, display: 'flex', justifyContent: 'center' }}>
+          <div style={{ width: 46, height: 46, borderRadius: 12, background: 'rgba(255,255,255,0.07)', border: '1px solid rgba(255,255,255,0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+            <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+              <rect x="2" y="2" width="6" height="6" rx="1.5" stroke="rgba(255,255,255,0.4)" strokeWidth="1.3"/>
+              <rect x="12" y="2" width="6" height="6" rx="1.5" stroke="rgba(255,255,255,0.4)" strokeWidth="1.3"/>
+              <rect x="2" y="12" width="6" height="6" rx="1.5" stroke="rgba(255,255,255,0.4)" strokeWidth="1.3"/>
+              <rect x="12" y="12" width="6" height="6" rx="1.5" stroke="rgba(255,255,255,0.4)" strokeWidth="1.3"/>
+            </svg>
+          </div>
+        </div>
+        <div style={{ flex: 1, display: 'flex', justifyContent: 'center' }}>
+          <div style={{ width: 68, height: 68, borderRadius: '50%', border: '3px solid rgba(255,255,255,0.85)', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}>
+            <div style={{ width: 54, height: 54, borderRadius: '50%', background: '#fff' }}/>
+          </div>
+        </div>
+        <div style={{ flex: 1, display: 'flex', justifyContent: 'center' }}>
+          <button style={{ fontSize: 11, fontFamily: FONT_KO, color: 'rgba(255,255,255,0.35)', background: 'none', border: 'none', cursor: 'pointer' }}>건너뛰기</button>
+        </div>
+      </div>
+      <div style={{ textAlign: 'center', paddingBottom: 12 }}>
+        <span style={{ fontSize: 11, fontFamily: FONT_KO, color: 'rgba(255,255,255,0.28)' }}>안 찍어도 돼요 — 저장하고 넘어가기</span>
+      </div>
+    </div>
+  );
+}
+
+/* ─── Screen: Lifestyle Input ─── */
+function LifestyleInput({ dark = false }) {
+  const c = C[dark ? 'dark' : 'light'];
+
+  function Card({ children, style }) {
+    return (
+      <div style={{ background: c.surface, borderRadius: 18, padding: '14px 16px', boxShadow: c.sh, border: `1px solid ${c.border}`, ...style }}>
+        {children}
+      </div>
+    );
+  }
+
+  function SectionLabel({ children }) {
+    return <div style={{ fontSize: 11, letterSpacing: '0.5px', textTransform: 'uppercase', color: c.t3, fontWeight: 500, marginBottom: 10 }}>{children}</div>;
+  }
+
+  function ToggleTag({ label, active }) {
+    return (
+      <div style={{
+        padding: '6px 13px', borderRadius: 20, cursor: 'pointer',
+        background: active ? c.accent : c.s2,
+        color: active ? '#fff' : c.t2,
+        fontSize: 12, fontFamily: FONT_KO, fontWeight: active ? 600 : 400,
+        border: `1px solid ${active ? c.accent : c.border}`,
+      }}>{label}</div>
+    );
+  }
+
+  return (
+    <div style={{ background: c.bg, fontFamily: FONT_KO, display: 'flex', flexDirection: 'column', minHeight: 700 }}>
+      {/* Header */}
+      <div style={{ padding: '10px 22px 14px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+        <div>
+          <div style={{ fontSize: 11, color: c.t3, marginBottom: 2 }}>Step 2 / 2</div>
+          <div style={{ fontSize: 20, fontWeight: 700, color: c.t1, letterSpacing: '-0.5px' }}>생활 기록</div>
+        </div>
+        <div style={{ fontSize: 12, color: c.accent, fontWeight: 500, padding: '8px 14px', background: c.accentDim, borderRadius: 20 }}>
+          모두 선택 사항
+        </div>
+      </div>
+
+      {/* Progress bar */}
+      <div style={{ height: 2, background: c.s3, margin: '0 22px 16px' }}>
+        <div style={{ width: '100%', height: '100%', background: c.accent, borderRadius: 2 }}/>
+      </div>
+
+      <div style={{ flex: 1, padding: '0 16px', display: 'flex', flexDirection: 'column', gap: 10, overflowY: 'auto' }}>
+        {/* Water */}
+        <Card>
+          <SectionLabel>💧 물 섭취</SectionLabel>
+          <div style={{ display: 'flex', gap: 5 }}>
+            {[1,2,3,4,5,6,7,8].map(n => (
+              <div key={n} style={{
+                flex: 1, aspectRatio: '1', borderRadius: 10,
+                background: n <= 5 ? c.accent : c.s2,
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                fontSize: 11, fontFamily: FONT_NUM, fontWeight: 600,
+                color: n <= 5 ? '#fff' : c.t3,
+              }}>{n}</div>
+            ))}
+          </div>
+          <div style={{ fontSize: 11, color: c.t3, marginTop: 8 }}>5잔 선택됨</div>
+        </Card>
+
+        {/* Food */}
+        <Card>
+          <SectionLabel>🍽 주의 음식</SectionLabel>
+          <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+            {[{l:'유제품',a:true},{l:'밀가루',a:true},{l:'설탕',a:false},{l:'술',a:false},{l:'자극적',a:false},{l:'외식',a:false}].map((item, i) => (
+              <ToggleTag key={i} label={item.l} active={item.a}/>
+            ))}
+          </div>
+        </Card>
+
+        {/* Exercise */}
+        <Card>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+            <SectionLabel style={{ margin: 0 }}>🏃 운동</SectionLabel>
+            <div style={{ display: 'flex', gap: 6 }}>
+              <ToggleTag label="했어요" active={true}/>
+              <ToggleTag label="안 했어요" active={false}/>
+            </div>
+          </div>
+        </Card>
+
+        {/* Skincare */}
+        <Card>
+          <SectionLabel>🧴 스킨케어</SectionLabel>
+          {[{l:'선크림', c:true},{l:'보습제', c:true},{l:'트러블 제품', c:false}].map((item, i) => (
+            <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: i < 2 ? 10 : 0 }}>
+              <div style={{
+                width: 20, height: 20, borderRadius: 6, flexShrink: 0,
+                background: item.c ? c.accent : c.s2,
+                border: `1.5px solid ${item.c ? c.accent : c.border}`,
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+              }}>
+                {item.c && <svg width="10" height="10" viewBox="0 0 10 10" fill="none"><path d="M2 5L4.2 7.5L8 3" stroke="#fff" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg>}
+              </div>
+              <span style={{ fontSize: 14, color: c.t1 }}>{item.l}</span>
+            </div>
+          ))}
+        </Card>
+
+        {/* Memo */}
+        <Card style={{ marginBottom: 4 }}>
+          <SectionLabel>📝 한 줄 메모</SectionLabel>
+          <div style={{ background: c.s2, borderRadius: 10, padding: '10px 12px', minHeight: 40 }}>
+            <span style={{ fontSize: 13, color: c.t3, fontStyle: 'italic' }}>오늘 피부 느낌 한 줄로...</span>
+          </div>
+        </Card>
+      </div>
+
+      {/* CTA */}
+      <div style={{ padding: '12px 16px 6px', borderTop: `1px solid ${c.border}`, background: c.navBg, backdropFilter: 'blur(20px)' }}>
+        <button style={{
+          width: '100%', padding: '14px 0',
+          background: c.accent, border: 'none', borderRadius: 14,
+          fontSize: 15, fontWeight: 600, fontFamily: FONT_KO,
+          color: '#fff', cursor: 'pointer',
+        }}>저장하고 끝내기</button>
+        <div style={{ textAlign: 'center', marginTop: 8, fontSize: 11, color: c.t3, paddingBottom: 4 }}>입력 없이 저장해도 돼요</div>
+      </div>
+      <NavBar active={1} dark={dark}/>
+    </div>
+  );
+}
+
+/* ─── Screen: Record Detail ─── */
+function RecordDetail({ dark = false }) {
+  const c = C[dark ? 'dark' : 'light'];
+
+  return (
+    <div style={{ background: c.bg, fontFamily: FONT_KO, display: 'flex', flexDirection: 'column', minHeight: 700 }}>
+      {/* Header */}
+      <div style={{ padding: '10px 22px 14px' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+          <div>
+            <div style={{ fontSize: 13, color: c.t3, marginBottom: 2 }}>2026년 4월</div>
+            <div style={{ display: 'flex', alignItems: 'baseline', gap: 10 }}>
+              <span style={{ fontFamily: FONT_NUM, fontSize: 48, fontWeight: 700, lineHeight: 1, color: c.t1, letterSpacing: '-2px' }}>25</span>
+              <div>
+                <div style={{ fontSize: 18, fontWeight: 600, color: c.t1 }}>토요일</div>
+                <div style={{ fontSize: 12, color: c.t3 }}>4일 전</div>
+              </div>
+            </div>
+          </div>
+          <div style={{ display: 'flex', gap: 6, marginTop: 6 }}>
+            <div style={{ width: 34, height: 34, borderRadius: 10, border: `1px solid ${c.border}`, background: c.surface, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M5 8H3L8 3L13 8H11V13H5V8Z" stroke={c.t2} strokeWidth="1.4" strokeLinejoin="round"/></svg>
+            </div>
+            <div style={{ width: 34, height: 34, borderRadius: 10, border: `1px solid ${c.border}`, background: c.surface, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M5 8H3L8 13L13 8H11V3H5V8Z" stroke={c.t2} strokeWidth="1.4" strokeLinejoin="round"/></svg>
+            </div>
+          </div>
+        </div>
+
+        {/* Week mini-strip */}
+        <div style={{ display: 'flex', gap: 3, marginTop: 12 }}>
+          {['월','화','수','목','금','토','일'].map((d, i) => {
+            const isSelected = i === 5;
+            const hasRec = [true,true,false,true,true,true,false][i];
+            return (
+              <div key={i} style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4 }}>
+                <div style={{
+                  width: 30, height: 30, borderRadius: 8,
+                  background: isSelected ? c.t1 : hasRec ? c.s3 : 'transparent',
+                  border: `1px solid ${isSelected ? c.t1 : hasRec ? c.border : c.border}`,
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                }}>
+                  <span style={{ fontSize: 10, fontWeight: isSelected ? 700 : 400, color: isSelected ? (dark ? c.bg : '#fff') : hasRec ? c.t2 : c.t3 }}>{d}</span>
+                </div>
+                {hasRec && <div style={{ width: 4, height: 4, borderRadius: '50%', background: isSelected ? c.accent : c.t3 }}/>}
+              </div>
+            );
+          })}
+        </div>
+      </div>
+
+      <div style={{ height: 1, background: c.border, margin: '0 22px' }}/>
+
+      <div style={{ flex: 1, padding: '14px 16px', display: 'flex', flexDirection: 'column', gap: 12 }}>
+        {/* Photos */}
+        <div style={{ background: c.surface, borderRadius: 20, padding: '14px', boxShadow: c.shLg, border: `1px solid ${c.border}` }}>
+          <div style={{ display: 'flex', gap: 8, marginBottom: 12 }}>
+            <PhotoSlot angle="정면" filled dark={dark}/>
+            <PhotoSlot angle="좌" filled dark={dark}/>
+            <PhotoSlot angle="우" filled dark={dark}/>
+          </div>
+          <div style={{ display: 'flex', gap: 8 }}>
+            <button style={{ flex: 1, padding: '10px 0', background: 'transparent', border: `1px solid ${c.border}`, borderRadius: 10, fontSize: 13, fontFamily: FONT_KO, color: c.t2, cursor: 'pointer' }}>수정</button>
+            <button style={{ flex: 2, padding: '10px 0', background: c.accentDim, border: 'none', borderRadius: 10, fontSize: 13, fontFamily: FONT_KO, fontWeight: 600, color: c.accentText, cursor: 'pointer' }}>이 날짜로 비교하기 →</button>
+          </div>
+        </div>
+
+        {/* Lifestyle summary */}
+        <div style={{ background: c.surface, borderRadius: 18, padding: '14px 16px', boxShadow: c.sh, border: `1px solid ${c.border}` }}>
+          <div style={{ fontSize: 13, fontWeight: 500, color: c.t1, marginBottom: 10 }}>생활 기록</div>
+          <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginBottom: 10 }}>
+            <Chip label="물 7잔" variant="accent" dark={dark}/>
+            <Chip label="유제품" dark={dark}/>
+            <Chip label="운동" variant="accent" dark={dark}/>
+            <Chip label="선크림" variant="accent" dark={dark}/>
+          </div>
+          <div style={{ background: c.s2, borderRadius: 10, padding: '9px 12px' }}>
+            <span style={{ fontSize: 12, color: c.t2, fontStyle: 'italic' }}>"코 옆이 살짝 건조했음"</span>
+          </div>
+        </div>
+      </div>
+      <NavBar active={2} dark={dark}/>
+    </div>
+  );
+}
+
+/* ─── Screen: Compare Step 1 (날짜 선택) ─── */
+function HiFiCompareStep1({ dark = false }) {
+  const c = C[dark ? 'dark' : 'light'];
+
+  function StepDot({ n, label, active, done }) {
+    return (
+      <div style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
+        <div style={{
+          width: 20, height: 20, borderRadius: '50%',
+          background: done ? c.t3 : active ? c.t1 : c.s3,
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+        }}>
+          {done
+            ? <svg width="10" height="10" viewBox="0 0 10 10" fill="none"><path d="M2 5L4.2 7.5L8 3" stroke="#fff" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg>
+            : <span style={{ fontSize: 10, fontWeight: 700, fontFamily: FONT_NUM, color: active ? '#fff' : c.t3 }}>{n}</span>
+          }
+        </div>
+        <span style={{ fontSize: 11, fontFamily: FONT_KO, color: active ? c.t1 : c.t3, fontWeight: active ? 600 : 400 }}>{label}</span>
+      </div>
+    );
+  }
+
+  const days = [null,null,null,null,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,null];
+  const hasRecord = new Set([1,3,5,8,10,12,15,17,19,22,24,25,27,29]);
+
+  return (
+    <div style={{ background: c.bg, fontFamily: FONT_KO, display: 'flex', flexDirection: 'column', minHeight: 700 }}>
+      <div style={{ padding: '10px 22px 14px' }}>
+        <div style={{ fontSize: 20, fontWeight: 700, color: c.t1, letterSpacing: '-0.5px', marginBottom: 14 }}>날짜 선택</div>
+        {/* Step indicator */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+          <StepDot n={1} label="날짜" active={true} done={false}/>
+          <div style={{ flex: 1, height: 1, background: c.border }}/>
+          <StepDot n={2} label="각도" active={false} done={false}/>
+          <div style={{ flex: 1, height: 1, background: c.border }}/>
+          <StepDot n={3} label="비교" active={false} done={false}/>
+        </div>
+      </div>
+
+      <div style={{ flex: 1, padding: '0 16px', display: 'flex', flexDirection: 'column', gap: 10 }}>
+        {/* Presets */}
+        <div style={{ display: 'flex', gap: 6 }}>
+          {['1주 전','2주 전','1달 전','3달 전'].map((opt, i) => (
+            <div key={i} style={{
+              flex: 1, padding: '8px 0', borderRadius: 12, textAlign: 'center',
+              background: i === 2 ? c.t1 : c.surface,
+              border: `1px solid ${i === 2 ? c.t1 : c.border}`,
+              fontSize: 11, fontFamily: FONT_KO, fontWeight: i === 2 ? 600 : 400,
+              color: i === 2 ? (dark ? c.bg : '#fff') : c.t2,
+              boxShadow: i === 2 ? c.sh : 'none', cursor: 'pointer',
+            }}>{opt}</div>
+          ))}
+        </div>
+
+        {/* Selected range */}
+        <div style={{ background: c.surface, borderRadius: 18, padding: '14px 18px', boxShadow: c.sh, border: `1px solid ${c.border}` }}>
+          <div style={{ display: 'flex', justifyContent: 'space-around', alignItems: 'center' }}>
+            <div style={{ textAlign: 'center' }}>
+              <div style={{ fontSize: 11, color: c.t3, marginBottom: 3 }}>시작</div>
+              <div style={{ fontFamily: FONT_NUM, fontSize: 20, fontWeight: 700, color: c.accent }}>3월 29일</div>
+            </div>
+            <div>
+              <svg width="24" height="12" viewBox="0 0 24 12" fill="none"><path d="M2 6H22M16 1L22 6L16 11" stroke={c.t3} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg>
+            </div>
+            <div style={{ textAlign: 'center' }}>
+              <div style={{ fontSize: 11, color: c.t3, marginBottom: 3 }}>끝</div>
+              <div style={{ fontFamily: FONT_NUM, fontSize: 20, fontWeight: 700, color: c.t1 }}>4월 29일</div>
+            </div>
+          </div>
+        </div>
+
+        {/* Mini calendar */}
+        <div style={{ background: c.surface, borderRadius: 18, padding: '14px', boxShadow: c.sh, border: `1px solid ${c.border}` }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
+            <div style={{ width: 28, height: 28, borderRadius: 8, background: c.s2, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M8 2L4 6L8 10" stroke={c.t2} strokeWidth="1.5" strokeLinecap="round"/></svg>
+            </div>
+            <span style={{ fontSize: 14, fontWeight: 600, color: c.t1, fontFamily: FONT_KO }}>2026년 4월</span>
+            <div style={{ width: 28, height: 28, borderRadius: 8, background: c.s2, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M4 2L8 6L4 10" stroke={c.t2} strokeWidth="1.5" strokeLinecap="round"/></svg>
+            </div>
+          </div>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7,1fr)', gap: 3 }}>
+            {['일','월','화','수','목','금','토'].map(d => (
+              <div key={d} style={{ textAlign: 'center', fontSize: 9, color: c.t3, paddingBottom: 4, fontFamily: FONT_KO }}>{d}</div>
+            ))}
+            {days.map((d, i) => (
+              <div key={i} style={{
+                aspectRatio: '1', borderRadius: 7,
+                background: d === 29 ? c.t1 : d === 1 ? c.accentDim : 'transparent',
+                border: d === 1 ? `1.5px solid ${c.accent}` : 'none',
+                display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 1,
+                cursor: d ? 'pointer' : 'default',
+              }}>
+                {d && <>
+                  <span style={{ fontSize: 10, fontFamily: FONT_NUM, fontWeight: d === 29 || d === 1 ? 700 : 400, color: d === 29 ? (dark ? c.bg : '#fff') : d === 1 ? c.accentText : c.t1, lineHeight: 1 }}>{d}</span>
+                  {hasRecord.has(d) && <div style={{ width: 3, height: 3, borderRadius: '50%', background: d === 29 ? (dark ? c.bg : '#fff') : d === 1 ? c.accent : c.t3 }}/>}
+                </>}
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+
+      <div style={{ padding: '12px 16px 6px', borderTop: `1px solid ${c.border}`, background: c.navBg, backdropFilter: 'blur(20px)' }}>
+        <button style={{ width: '100%', padding: '14px 0', background: c.accent, border: 'none', borderRadius: 14, fontSize: 15, fontWeight: 600, fontFamily: FONT_KO, color: '#fff', cursor: 'pointer' }}>각도 선택 →</button>
+      </div>
+      <NavBar active={3} dark={dark}/>
+    </div>
+  );
+}
+
+/* ─── Screen: Compare Step 2 (각도 선택) ─── */
+function HiFiCompareStep2({ dark = false }) {
+  const c = C[dark ? 'dark' : 'light'];
+
+  function StepDot({ n, label, active, done }) {
+    return (
+      <div style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
+        <div style={{ width: 20, height: 20, borderRadius: '50%', background: done ? c.t3 : active ? c.t1 : c.s3, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          {done ? <svg width="10" height="10" viewBox="0 0 10 10" fill="none"><path d="M2 5L4.2 7.5L8 3" stroke="#fff" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg>
+            : <span style={{ fontSize: 10, fontWeight: 700, fontFamily: FONT_NUM, color: active ? '#fff' : c.t3 }}>{n}</span>}
+        </div>
+        <span style={{ fontSize: 11, fontFamily: FONT_KO, color: active ? c.t1 : c.t3, fontWeight: active ? 600 : 400 }}>{label}</span>
+      </div>
+    );
+  }
+
+  const angles = [
+    { label: '정면', sub: 'Front', avail: true, selected: true },
+    { label: '좌측', sub: 'Left', avail: true, selected: false },
+    { label: '우측', sub: 'Right', avail: false, selected: false, reason: '3월 29일 사진 없음' },
+  ];
+
+  return (
+    <div style={{ background: c.bg, fontFamily: FONT_KO, display: 'flex', flexDirection: 'column', minHeight: 700 }}>
+      <div style={{ padding: '10px 22px 14px' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 14 }}>
+          <span style={{ fontSize: 13, color: c.accent, fontWeight: 500, cursor: 'pointer' }}>← 날짜</span>
+          <div style={{ fontSize: 20, fontWeight: 700, color: c.t1, letterSpacing: '-0.5px' }}>각도 선택</div>
+        </div>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+          <StepDot n={1} label="날짜" active={false} done={true}/>
+          <div style={{ flex: 1, height: 1, background: c.accent }}/>
+          <StepDot n={2} label="각도" active={true} done={false}/>
+          <div style={{ flex: 1, height: 1, background: c.border }}/>
+          <StepDot n={3} label="비교" active={false} done={false}/>
+        </div>
+        <div style={{ fontSize: 12, color: c.t3, marginTop: 10 }}>3월 29일 → 4월 29일 · 두 날짜에 모두 있는 각도만 선택 가능</div>
+      </div>
+
+      <div style={{ flex: 1, padding: '0 16px', display: 'flex', flexDirection: 'column', gap: 10 }}>
+        {angles.map((angle, i) => (
+          <div key={i} style={{
+            background: angle.selected ? c.surface : angle.avail ? c.surface : c.s2,
+            borderRadius: 18, padding: '14px',
+            border: angle.selected ? `2px solid ${c.accent}` : `1px solid ${c.border}`,
+            boxShadow: angle.selected ? c.shLg : 'none',
+            opacity: angle.avail ? 1 : 0.45,
+            cursor: angle.avail ? 'pointer' : 'default',
+          }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+              {/* Thumbnails */}
+              <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
+                {['3.29', '4.29'].map((date, j) => (
+                  <React.Fragment key={j}>
+                    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4 }}>
+                      <div style={{ width: 46, height: 58, borderRadius: 10, background: angle.avail ? (dark ? '#2a3448' : '#d0d8e8') : c.s3, display: 'flex', alignItems: 'flex-end', justifyContent: 'center', paddingBottom: 6, overflow: 'hidden' }}>
+                        {angle.avail && <div style={{ width: 26, height: 26, borderRadius: '50%', background: dark ? '#3d4d68' : '#b0bcd0' }}/>}
+                      </div>
+                      <span style={{ fontSize: 9, fontFamily: FONT_NUM, color: c.t3 }}>{date}</span>
+                    </div>
+                    {j === 0 && <svg width="14" height="10" viewBox="0 0 14 10" fill="none"><path d="M1 5H13M9 1L13 5L9 9" stroke={c.t3} strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round"/></svg>}
+                  </React.Fragment>
+                ))}
+              </div>
+              {/* Label */}
+              <div style={{ flex: 1 }}>
+                <div style={{ fontSize: 16, fontWeight: 600, color: c.t1, letterSpacing: '-0.3px' }}>{angle.label}</div>
+                <div style={{ fontSize: 12, color: c.t3 }}>{angle.sub}</div>
+                {!angle.avail && <div style={{ fontSize: 11, color: '#e07050', marginTop: 2 }}>{angle.reason}</div>}
+              </div>
+              {/* Check */}
+              {angle.selected && (
+                <div style={{ width: 22, height: 22, borderRadius: '50%', background: c.accent, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                  <svg width="11" height="11" viewBox="0 0 11 11" fill="none"><path d="M2 5.5L4.5 8L9 3" stroke="#fff" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                </div>
+              )}
+            </div>
+          </div>
+        ))}
+      </div>
+
+      <div style={{ padding: '12px 16px 6px', borderTop: `1px solid ${c.border}`, background: c.navBg, backdropFilter: 'blur(20px)' }}>
+        <button style={{ width: '100%', padding: '14px 0', background: c.accent, border: 'none', borderRadius: 14, fontSize: 15, fontWeight: 600, fontFamily: FONT_KO, color: '#fff', cursor: 'pointer' }}>비교 보기 →</button>
+      </div>
+      <NavBar active={3} dark={dark}/>
+    </div>
+  );
+}
+
+/* ─── Screen: Compare Step 3 (드래그 슬라이더) ─── */
+function HiFiCompareStep3({ dark = false }) {
+  const c = C[dark ? 'dark' : 'light'];
+  const [split, setSplit] = React.useState(50);
+  const trackRef = React.useRef(null);
+
+  function handleMouseDown(e) {
+    const move = (ev) => {
+      if (!trackRef.current) return;
+      const rect = trackRef.current.getBoundingClientRect();
+      const clientX = ev.touches ? ev.touches[0].clientX : ev.clientX;
+      const pct = Math.max(5, Math.min(95, ((clientX - rect.left) / rect.width) * 100));
+      setSplit(pct);
+    };
+    const up = () => { document.removeEventListener('mousemove', move); document.removeEventListener('mouseup', up); document.removeEventListener('touchmove', move); document.removeEventListener('touchend', up); };
+    document.addEventListener('mousemove', move);
+    document.addEventListener('mouseup', up);
+    document.addEventListener('touchmove', move, { passive: true });
+    document.addEventListener('touchend', up);
+  }
+
+  return (
+    <div style={{ background: '#0A0A0F', fontFamily: FONT_KO, display: 'flex', flexDirection: 'column', minHeight: 700 }}>
+      {/* Top bar */}
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '8px 22px 10px' }}>
+        <span style={{ fontSize: 14, color: 'rgba(255,255,255,0.45)' }}>← 각도</span>
+        <span style={{ fontSize: 15, fontWeight: 600, color: '#fff' }}>정면 비교</span>
+        <span style={{ fontSize: 13, color: '#72C98E', fontWeight: 500 }}>저장</span>
+      </div>
+
+      {/* Angle + Date info */}
+      <div style={{ display: 'flex', gap: 8, padding: '0 16px 12px', alignItems: 'center' }}>
+        {['정면','좌측'].map((a, i) => (
+          <div key={i} style={{ padding: '5px 12px', borderRadius: 20, background: i === 0 ? 'rgba(255,255,255,0.12)' : 'rgba(255,255,255,0.05)', fontSize: 12, fontFamily: FONT_KO, color: i === 0 ? '#fff' : 'rgba(255,255,255,0.35)', fontWeight: i === 0 ? 500 : 400 }}>{a}</div>
+        ))}
+        <div style={{ flex: 1 }}/>
+        <span style={{ fontSize: 11, fontFamily: FONT_KO, color: 'rgba(255,255,255,0.35)' }}>3.29 → 4.29</span>
+      </div>
+
+      {/* Comparison area */}
+      <div ref={trackRef} style={{ flex: 1, position: 'relative', margin: '0 14px', borderRadius: 24, overflow: 'hidden', background: '#111118', minHeight: 280, cursor: 'ew-resize', userSelect: 'none' }}
+        onMouseDown={handleMouseDown} onTouchStart={handleMouseDown}>
+
+        {/* Before face */}
+        <div style={{ position: 'absolute', inset: 0, background: '#1a2038', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          <div style={{ width: 110, height: 130, borderRadius: '50% 50% 45% 45%', background: '#2a3550', border: '2px solid #3a4a68', display: 'flex', alignItems: 'flex-end', justifyContent: 'center', paddingBottom: 10 }}>
+            <div style={{ width: 56, height: 56, borderRadius: '50%', background: '#3a4a68' }}/>
+          </div>
+        </div>
+
+        {/* After overlay (clipped) */}
+        <div style={{ position: 'absolute', top: 0, bottom: 0, left: `${split}%`, right: 0, background: '#0e1826', display: 'flex', alignItems: 'center', justifyContent: 'flex-start', overflow: 'hidden' }}>
+          <div style={{ position: 'absolute', left: `-${split}%`, width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%' }}>
+            <div style={{ position: 'relative', left: `${(split - 50) * 0.8}px` }}>
+              <div style={{ width: 110, height: 130, borderRadius: '50% 50% 45% 45%', background: '#2d4060', border: '2px solid #4a6080', display: 'flex', alignItems: 'flex-end', justifyContent: 'center', paddingBottom: 10 }}>
+                <div style={{ width: 56, height: 56, borderRadius: '50%', background: '#4a6080' }}/>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Divider line */}
+        <div style={{ position: 'absolute', top: 0, bottom: 0, left: `calc(${split}% - 1px)`, width: 2, background: 'rgba(255,255,255,0.9)', zIndex: 10 }}/>
+
+        {/* Drag handle */}
+        <div style={{
+          position: 'absolute', top: '50%', left: `${split}%`,
+          transform: 'translate(-50%, -50%)',
+          width: 38, height: 38, borderRadius: '50%',
+          background: '#fff', zIndex: 11,
+          boxShadow: '0 2px 12px rgba(0,0,0,0.4)',
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+          cursor: 'ew-resize',
+        }}>
+          <svg width="16" height="12" viewBox="0 0 16 12" fill="none">
+            <path d="M5 1L1 6L5 11" stroke="#333" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+            <path d="M11 1L15 6L11 11" stroke="#333" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+          </svg>
+        </div>
+
+        {/* Date labels */}
+        <div style={{ position: 'absolute', bottom: 12, left: 12, background: 'rgba(0,0,0,0.55)', backdropFilter: 'blur(8px)', borderRadius: 8, padding: '4px 10px', zIndex: 12 }}>
+          <span style={{ fontSize: 11, fontFamily: FONT_KO, color: 'rgba(255,255,255,0.8)' }}>3월 29일</span>
+        </div>
+        <div style={{ position: 'absolute', bottom: 12, right: 12, background: 'rgba(0,0,0,0.55)', backdropFilter: 'blur(8px)', borderRadius: 8, padding: '4px 10px', zIndex: 12 }}>
+          <span style={{ fontSize: 11, fontFamily: FONT_KO, color: '#72C98E', fontWeight: 500 }}>4월 29일</span>
+        </div>
+
+        {/* Hint */}
+        <div style={{ position: 'absolute', top: 12, left: '50%', transform: 'translateX(-50%)', zIndex: 12, background: 'rgba(0,0,0,0.5)', backdropFilter: 'blur(8px)', borderRadius: 20, padding: '5px 14px', display: 'flex', alignItems: 'center', gap: 6, whiteSpace: 'nowrap' }}>
+          <span style={{ fontSize: 11, fontFamily: FONT_KO, color: 'rgba(255,255,255,0.7)' }}>← 드래그해서 비교 →</span>
+        </div>
+      </div>
+
+      {/* Info strip */}
+      <div style={{ background: dark ? '#141826' : '#0e1018', padding: '12px 20px', display: 'flex', justifyContent: 'space-around', borderTop: '1px solid rgba(255,255,255,0.05)' }}>
+        {[{l:'시작일', v:'3월 29일', ac:false},{l:'기간', v:'31일', ac:false},{l:'현재', v:'4월 29일', ac:true}].map((item,i) => (
+          <div key={i} style={{ textAlign: 'center' }}>
+            <div style={{ fontSize: 10, fontFamily: FONT_KO, color: 'rgba(255,255,255,0.35)', marginBottom: 2 }}>{item.l}</div>
+            <div style={{ fontFamily: FONT_NUM, fontSize: 14, fontWeight: 600, color: item.ac ? '#72C98E' : 'rgba(255,255,255,0.8)' }}>{item.v}</div>
+          </div>
+        ))}
+      </div>
+
+      {/* Timeline scrubber */}
+      <div style={{ padding: '10px 20px 6px', background: '#0A0A0F' }}>
+        <div style={{ fontSize: 10, fontFamily: FONT_KO, color: 'rgba(255,255,255,0.3)', marginBottom: 6 }}>타임라인</div>
+        <div style={{ height: 3, background: 'rgba(255,255,255,0.08)', borderRadius: 3, position: 'relative' }}>
+          <div style={{ height: '100%', width: '100%', background: 'rgba(114,201,142,0.5)', borderRadius: 3 }}/>
+          <div style={{ position: 'absolute', top: '50%', left: 0, transform: 'translate(-50%,-50%)', width: 12, height: 12, borderRadius: '50%', background: '#72C98E', border: '2px solid #0A0A0F' }}/>
+          <div style={{ position: 'absolute', top: '50%', right: 0, transform: 'translate(50%,-50%)', width: 12, height: 12, borderRadius: '50%', background: '#fff', border: '2px solid #0A0A0F' }}/>
+        </div>
+        <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 5 }}>
+          <span style={{ fontSize: 10, fontFamily: FONT_NUM, color: 'rgba(255,255,255,0.3)' }}>3.29</span>
+          <span style={{ fontSize: 10, fontFamily: FONT_NUM, color: 'rgba(255,255,255,0.3)' }}>4.29</span>
+        </div>
+      </div>
+      <NavBar active={3} dark={false}/>
+    </div>
+  );
+}
+
+/* ─── Artboard wrapper ─── */
+function ABWrap({ bg, label, children, annotations = [] }) {
+  return (
+    <div style={{ width: '100%', height: '100%', background: bg, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 16, padding: '28px 20px' }}>
+      <div style={{ fontSize: 11, fontFamily: FONT_KO, color: 'rgba(80,100,140,0.6)', letterSpacing: '0.5px', textTransform: 'uppercase' }}>{label}</div>
+      {children}
+      {annotations.length > 0 && (
+        <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', justifyContent: 'center', maxWidth: 340 }}>
+          {annotations.map((a, i) => (
+            <span key={i} style={{ fontSize: 11, fontFamily: FONT_KO, background: 'rgba(255,255,255,0.8)', border: '1px solid rgba(200,60,30,0.2)', color: '#b04020', borderRadius: 6, padding: '3px 8px' }}>{a}</span>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+/* ─── Main App ─── */
+const TWEAK_DEFAULTS = /*EDITMODE-BEGIN*/{
+  "darkMode": false
+}/*EDITMODE-END*/;
+
+function App() {
+  const [tweaks, setTweak] = useTweaks(TWEAK_DEFAULTS);
+  const dark = tweaks.darkMode;
+
+  return (
+    <>
+      <DesignCanvas title="피부일기 — Hi-Fi">
+        <DCSection id="home" title="홈 화면">
+          <DCArtboard id="home-empty" label="홈 — 미기록 (라이트)" width={430} height={860}>
+            <ABWrap bg={dark ? '#1a1e2c' : '#dde3ef'} label="Screen 1A · 홈 미기록" annotations={['대형 날짜 = 화면의 錨', '사진 슬롯 = 입장 유도', '"안 찍어도 돼요" 명시']}>
+              <PhoneShell dark={dark}>
+                <HomeEmpty dark={dark}/>
+              </PhoneShell>
+            </ABWrap>
+          </DCArtboard>
+          <DCArtboard id="home-recorded" label="홈 — 기록 완료 (라이트)" width={430} height={860}>
+            <ABWrap bg={dark ? '#151922' : '#d8deea'} label="Screen 1B · 홈 완료" annotations={['조용한 체크 뱃지', '비교 CTA 자연스럽게 등장', '생활기록 요약 카드']}>
+              <PhoneShell dark={dark}>
+                <HomeRecorded dark={dark}/>
+              </PhoneShell>
+            </ABWrap>
+          </DCArtboard>
+        </DCSection>
+
+        <DCSection id="camera" title="카메라 · 촬영 가이드">
+          <DCArtboard id="cam-guide" label="카메라 — 가이드 오버레이" width={430} height={860}>
+            <ABWrap bg="#0e1018" label="Screen 2A · 카메라 가이드" annotations={['얼굴 타원 점선 + 내부 글로우', '눈높이 가이드라인', '실시간 조건 체크']}>
+              <PhoneShell alwaysDark>
+                <CameraGuide/>
+              </PhoneShell>
+            </ABWrap>
+          </DCArtboard>
+          <DCArtboard id="cam-angle" label="카메라 — 각도 전환 (정면→좌)" width={430} height={860}>
+            <ABWrap bg="#0c0e16" label="Screen 2B · 각도 전환" annotations={['정면 완료 토스트', '타원 위치 이동 (사이드 각도)', '완료 썸네일 우상단']}>
+              <PhoneShell alwaysDark>
+                <CameraAngleSwitch/>
+              </PhoneShell>
+            </ABWrap>
+          </DCArtboard>
+        </DCSection>
+        <DCSection id="lifestyle" title="생활 기록 입력">
+          <DCArtboard id="lifestyle-input" label="생활 기록 — 입력" width={430} height={860}>
+            <ABWrap bg={dark ? '#1a1e2c' : '#dde3ef'} label="Screen 3 · 생활기록" annotations={['물: 탭으로 잔 수 선택', '음식·운동: 토글 태그', '전항목 선택 사항']}>
+              <PhoneShell dark={dark}><LifestyleInput dark={dark}/></PhoneShell>
+            </ABWrap>
+          </DCArtboard>
+        </DCSection>
+
+        <DCSection id="detail" title="기록 상세 보기">
+          <DCArtboard id="record-detail" label="기록 상세 — 날짜별 카드" width={430} height={860}>
+            <ABWrap bg={dark ? '#151922' : '#d8deea'} label="Screen 4 · 상세보기" annotations={['날짜 히어로 + 주간 미니 캘린더', '"이 날짜로 비교하기" 빠른 진입', '생활기록 요약 + 메모']}>
+              <PhoneShell dark={dark}><RecordDetail dark={dark}/></PhoneShell>
+            </ABWrap>
+          </DCArtboard>
+        </DCSection>
+
+        <DCSection id="compare-flow" title="얼굴 비교 — 3단계 플로우">
+          <DCArtboard id="compare-s1" label="비교 Step 1 — 날짜 선택" width={430} height={860}>
+            <ABWrap bg={dark ? '#141a20' : '#dae4da'} label="Screen 5A · 날짜 선택" annotations={['빠른 선택 프리셋', '캘린더 직접 선택', '기록 있는 날짜에만 점 표시']}>
+              <PhoneShell dark={dark}><HiFiCompareStep1 dark={dark}/></PhoneShell>
+            </ABWrap>
+          </DCArtboard>
+          <DCArtboard id="compare-s2" label="비교 Step 2 — 각도 선택" width={430} height={860}>
+            <ABWrap bg={dark ? '#131b18' : '#d8e8dc'} label="Screen 5B · 각도 선택" annotations={['썸네일 미리보기', '양쪽 다 있는 각도만 활성', '없는 이유 명시']}>
+              <PhoneShell dark={dark}><HiFiCompareStep2 dark={dark}/></PhoneShell>
+            </ABWrap>
+          </DCArtboard>
+          <DCArtboard id="compare-s3" label="비교 Step 3 — 드래그 비교" width={430} height={860}>
+            <ABWrap bg="#0a0c14" label="Screen 5C · 드래그 슬라이더" annotations={['핸들 좌우 드래그로 before/after 분할', '날짜 레이블 항상 노출', '타임라인 스크러버']}>
+              <PhoneShell alwaysDark><HiFiCompareStep3 dark={dark}/></PhoneShell>
+            </ABWrap>
+          </DCArtboard>
+        </DCSection>
+
+      </DesignCanvas>
+
+      <TweaksPanel>
+        <TweakSection title="테마">
+          <TweakToggle label="다크 모드" value={dark} onChange={v => setTweak('darkMode', v)}/>
+        </TweakSection>
+      </TweaksPanel>
+    </>
+  );
+}
+
+const root = ReactDOM.createRoot(document.getElementById('root'));
+root.render(<App/>);
+</script>
+<div id="root"></div>
+</body>
+</html>

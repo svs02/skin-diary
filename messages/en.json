@@ -1,0 +1,109 @@
+{
+  "common": {
+    "appName": "Skin Diary",
+    "loading": "Loading...",
+    "save": "Save",
+    "saving": "Saving...",
+    "cancel": "Cancel",
+    "comingSoon": "Coming soon"
+  },
+  "tabs": {
+    "today": "Today",
+    "calendar": "Calendar",
+    "compare": "Compare",
+    "settings": "Settings"
+  },
+  "auth": {
+    "login": {
+      "title": "Welcome back",
+      "subtitle": "Track your skin, one day at a time.",
+      "googleButton": "Continue with Google",
+      "or": "or",
+      "emailLabel": "Email",
+      "passwordLabel": "Password",
+      "signInButton": "Sign in",
+      "signUpButton": "Create account",
+      "toggleToSignUp": "New here? Create an account",
+      "toggleToSignIn": "Have an account? Sign in",
+      "errorGeneric": "Something went wrong. Please try again.",
+      "errorInvalidCredentials": "Invalid email or password.",
+      "errorEmailInUse": "That email is already in use."
+    }
+  },
+  "record": {
+    "todayLabel": "Today",
+    "empty": {
+      "headline": "Nothing recorded yet",
+      "hint": "Capture this day in under a minute.",
+      "cta": "Start recording"
+    },
+    "recorded": {
+      "badge": "Recorded",
+      "photos": "Photos",
+      "lifestyle": "Lifestyle",
+      "water": "Water",
+      "food": "Food",
+      "cosmetic": "Cosmetic",
+      "exercise": "Exercise",
+      "memo": "Memo",
+      "exerciseYes": "Yes",
+      "exerciseNo": "No"
+    },
+    "lifestyle": {
+      "editButton": "Edit",
+      "cups": "cups",
+      "foodPlaceholder": "What did you eat?",
+      "cosmeticPlaceholder": "Skincare used",
+      "memoPlaceholder": "Notes about today",
+      "saveError": "Save failed. Try again."
+    },
+    "angles": {
+      "front": "Front",
+      "left": "Left",
+      "right": "Right"
+    },
+    "photos": {
+      "tapToAdd": "Add photo",
+      "uploading": "Uploading...",
+      "retry": "Retry",
+      "error": {
+        "tooLarge": "File too large",
+        "unsupported": "Unsupported format",
+        "upload": "Upload failed. Try again."
+      }
+    }
+  },
+  "calendar": {
+    "title": "Calendar",
+    "futureDisabled": "Can't record future dates",
+    "weekdays": {
+      "sun": "Sun",
+      "mon": "Mon",
+      "tue": "Tue",
+      "wed": "Wed",
+      "thu": "Thu",
+      "fri": "Fri",
+      "sat": "Sat"
+    },
+    "prevMonth": "Previous month",
+    "nextMonth": "Next month"
+  },
+  "settings": {
+    "title": "Settings",
+    "language": {
+      "title": "Language",
+      "description": "Choose your preferred language."
+    },
+    "account": {
+      "title": "Account",
+      "signOut": "Sign out"
+    }
+  },
+  "language": {
+    "en": "English",
+    "ko": "한국어"
+  },
+  "placeholder": {
+    "comingSoon": "This page is coming soon."
+  }
+}

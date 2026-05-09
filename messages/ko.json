@@ -1,0 +1,109 @@
+{
+  "common": {
+    "appName": "스킨 다이어리",
+    "loading": "불러오는 중...",
+    "save": "저장",
+    "saving": "저장 중...",
+    "cancel": "취소",
+    "comingSoon": "준비 중"
+  },
+  "tabs": {
+    "today": "오늘",
+    "calendar": "달력",
+    "compare": "비교",
+    "settings": "설정"
+  },
+  "auth": {
+    "login": {
+      "title": "다시 오신 걸 환영해요",
+      "subtitle": "하루 한 장, 피부를 기록해요.",
+      "googleButton": "Google 계정으로 계속하기",
+      "or": "또는",
+      "emailLabel": "이메일",
+      "passwordLabel": "비밀번호",
+      "signInButton": "로그인",
+      "signUpButton": "회원가입",
+      "toggleToSignUp": "처음이신가요? 회원가입",
+      "toggleToSignIn": "이미 계정이 있나요? 로그인",
+      "errorGeneric": "문제가 발생했어요. 다시 시도해 주세요.",
+      "errorInvalidCredentials": "이메일 또는 비밀번호가 올바르지 않아요.",
+      "errorEmailInUse": "이미 사용 중인 이메일이에요."
+    }
+  },
+  "record": {
+    "todayLabel": "오늘",
+    "empty": {
+      "headline": "아직 기록이 없어요",
+      "hint": "1분이면 이 날을 남길 수 있어요.",
+      "cta": "기록 시작"
+    },
+    "recorded": {
+      "badge": "기록 완료",
+      "photos": "사진",
+      "lifestyle": "생활 기록",
+      "water": "물",
+      "food": "음식",
+      "cosmetic": "화장품",
+      "exercise": "운동",
+      "memo": "메모",
+      "exerciseYes": "함",
+      "exerciseNo": "안 함"
+    },
+    "lifestyle": {
+      "editButton": "수정",
+      "cups": "잔",
+      "foodPlaceholder": "오늘 먹은 음식",
+      "cosmeticPlaceholder": "사용한 화장품",
+      "memoPlaceholder": "오늘 컨디션 메모",
+      "saveError": "저장 실패. 다시 시도하세요."
+    },
+    "angles": {
+      "front": "정면",
+      "left": "좌측",
+      "right": "우측"
+    },
+    "photos": {
+      "tapToAdd": "사진 추가",
+      "uploading": "올리는 중...",
+      "retry": "다시 시도",
+      "error": {
+        "tooLarge": "파일이 너무 커요",
+        "unsupported": "지원하지 않는 형식이에요",
+        "upload": "업로드 실패. 다시 시도하세요."
+      }
+    }
+  },
+  "calendar": {
+    "title": "달력",
+    "futureDisabled": "미래 날짜는 기록할 수 없어요",
+    "weekdays": {
+      "sun": "일",
+      "mon": "월",
+      "tue": "화",
+      "wed": "수",
+      "thu": "목",
+      "fri": "금",
+      "sat": "토"
+    },
+    "prevMonth": "이전 달",
+    "nextMonth": "다음 달"
+  },
+  "settings": {
+    "title": "설정",
+    "language": {
+      "title": "언어",
+      "description": "원하는 언어를 선택하세요."
+    },
+    "account": {
+      "title": "계정",
+      "signOut": "로그아웃"
+    }
+  },
+  "language": {
+    "en": "English",
+    "ko": "한국어"
+  },
+  "placeholder": {
+    "comingSoon": "준비 중인 페이지예요."
+  }
+}

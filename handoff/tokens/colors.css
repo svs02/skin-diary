@@ -1,0 +1,105 @@
+/* ─────────────────────────────────────────
+   피부일기 Design Tokens — CSS Custom Properties
+   Auto-generated from colors.json
+   Usage: import this file in your app's global CSS
+───────────────────────────────────────── */
+
+:root {
+  /* Background */
+  --color-bg:         #F2F5FA;
+  --color-surface:    #FFFFFF;
+  --color-surface-2:  #EDF0F7;
+  --color-surface-3:  #E0E6F0;
+
+  /* Text */
+  --color-text-primary:   #18202E;
+  --color-text-secondary: #5A6378;
+  --color-text-tertiary:  #9BA3BC;
+
+  /* Accent (Sage Green) */
+  --color-accent:      #6DBF8A;
+  --color-accent-dim:  #DCF0E5;
+  --color-accent-text: #26694A;
+
+  /* Structural */
+  --color-border:  rgba(80, 110, 170, 0.10);
+  --color-nav-bg:  rgba(255, 255, 255, 0.95);
+
+  /* Camera */
+  --camera-bg:           #0A0A0F;
+  --camera-guide-oval:   rgba(114, 201, 142, 0.70);
+  --camera-guide-line:   rgba(255, 210, 50, 0.50);
+  --camera-check-ok:     #72C98E;
+  --camera-check-warn:   rgba(255, 160, 40, 0.90);
+
+  /* Spacing */
+  --space-xs:  4px;
+  --space-sm:  8px;
+  --space-md:  12px;
+  --space-lg:  16px;
+  --space-xl:  20px;
+  --space-2xl: 24px;
+  --space-3xl: 32px;
+
+  /* Border Radius */
+  --radius-sm:   8px;
+  --radius-md:   12px;
+  --radius-lg:   18px;
+  --radius-xl:   22px;
+  --radius-full: 9999px;
+
+  /* Typography */
+  --font-display: 'DM Sans', sans-serif;
+  --font-body:    'Noto Sans KR', sans-serif;
+
+  --text-hero:    58px;
+  --text-title:   20px;
+  --text-section: 16px;
+  --text-body:    14px;
+  --text-label:   12px;
+  --text-caption: 11px;
+  --text-micro:   10px;
+
+  /* Shadow */
+  --shadow-sm: 0 2px 12px rgba(20, 35, 70, 0.07);
+  --shadow-lg: 0 8px 32px rgba(20, 35, 70, 0.10);
+}
+
+/* ── Dark mode override ── */
+[data-theme="dark"],
+.dark {
+  --color-bg:         #0C0F1A;
+  --color-surface:    #141826;
+  --color-surface-2:  #1B2135;
+  --color-surface-3:  #232C42;
+
+  --color-text-primary:   #EEF2FA;
+  --color-text-secondary: #8890AA;
+  --color-text-tertiary:  #44506A;
+
+  --color-accent:      #72C98E;
+  --color-accent-dim:  #162B22;
+  --color-accent-text: #72C98E;
+
+  --color-border:  rgba(100, 140, 220, 0.07);
+  --color-nav-bg:  rgba(20, 24, 38, 0.97);
+
+  --shadow-sm: 0 2px 12px rgba(0, 0, 0, 0.25);
+  --shadow-lg: 0 8px 40px rgba(0, 0, 0, 0.35);
+}
+
+/* ── Utility classes ── */
+.text-primary   { color: var(--color-text-primary); }
+.text-secondary { color: var(--color-text-secondary); }
+.text-tertiary  { color: var(--color-text-tertiary); }
+.text-accent    { color: var(--color-accent); }
+
+.bg-surface   { background: var(--color-surface); }
+.bg-surface-2 { background: var(--color-surface-2); }
+.bg-accent    { background: var(--color-accent); }
+.bg-accent-dim{ background: var(--color-accent-dim); }
+
+.radius-sm { border-radius: var(--radius-sm); }
+.radius-md { border-radius: var(--radius-md); }
+.radius-lg { border-radius: var(--radius-lg); }
+.radius-xl { border-radius: var(--radius-xl); }

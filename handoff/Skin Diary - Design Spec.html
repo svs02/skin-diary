@@ -1,0 +1,516 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>피부일기 — Design Spec</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700&family=DM+Mono:wght@400;500&family=Noto+Sans+KR:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #F2F5FA; --surface: #fff; --surface-2: #EDF0F7;
+    --t1: #18202E; --t2: #5A6378; --t3: #9BA3BC;
+    --accent: #6DBF8A; --accent-dim: #DCF0E5; --accent-text: #26694A;
+    --border: rgba(80,110,170,0.1);
+    --font-body: 'Noto Sans KR', sans-serif;
+    --font-mono: 'DM Mono', monospace;
+    --font-num: 'DM Sans', sans-serif;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { background: var(--bg); color: var(--t1); font-family: var(--font-body); font-size: 14px; line-height: 1.6; }
+
+  /* Layout */
+  .page { max-width: 900px; margin: 0 auto; padding: 48px 24px 80px; }
+  .section { margin-bottom: 56px; }
+  .section-title {
+    font-family: var(--font-num); font-size: 22px; font-weight: 700;
+    color: var(--t1); letter-spacing: -0.5px; margin-bottom: 4px;
+    padding-bottom: 12px; border-bottom: 2px solid var(--surface-2);
+  }
+  .section-sub { font-size: 12px; color: var(--t3); margin-bottom: 20px; margin-top: 4px; }
+
+  /* Header */
+  .doc-header { margin-bottom: 48px; padding-bottom: 24px; border-bottom: 1px solid var(--border); }
+  .doc-title { font-family: var(--font-num); font-size: 36px; font-weight: 700; letter-spacing: -1.5px; color: var(--t1); }
+  .doc-subtitle { font-size: 15px; color: var(--t2); margin-top: 6px; }
+  .doc-meta { display: flex; gap: 20px; margin-top: 16px; flex-wrap: wrap; }
+  .doc-meta span { font-size: 11px; font-family: var(--font-mono); color: var(--t3); background: var(--surface-2); padding: 3px 10px; border-radius: 6px; }
+
+  /* Cards */
+  .card { background: var(--surface); border: 1px solid var(--border); border-radius: 14px; padding: 18px 20px; box-shadow: 0 2px 12px rgba(20,35,70,0.05); }
+  .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+  .grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 14px; }
+  .grid-4 { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; }
+
+  /* Color swatches */
+  .swatch-group { margin-bottom: 20px; }
+  .swatch-row { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 10px; }
+  .swatch { display: flex; flex-direction: column; align-items: center; gap: 6px; }
+  .swatch-box { width: 64px; height: 64px; border-radius: 12px; border: 1px solid rgba(0,0,0,0.06); box-shadow: 0 2px 8px rgba(0,0,0,0.08); }
+  .swatch-name { font-family: var(--font-mono); font-size: 9px; color: var(--t3); text-align: center; max-width: 70px; word-break: break-all; }
+  .swatch-hex { font-family: var(--font-mono); font-size: 10px; color: var(--t2); font-weight: 500; }
+
+  /* Typography specimens */
+  .type-row { display: flex; align-items: baseline; gap: 16px; padding: 10px 0; border-bottom: 1px solid var(--surface-2); }
+  .type-row:last-child { border-bottom: none; }
+  .type-meta { font-family: var(--font-mono); font-size: 10px; color: var(--t3); min-width: 130px; flex-shrink: 0; line-height: 1.5; }
+  .type-specimen { color: var(--t1); }
+
+  /* Component specs */
+  .spec-row { display: flex; justify-content: space-between; align-items: center; padding: 8px 0; border-bottom: 1px solid var(--surface-2); }
+  .spec-row:last-child { border-bottom: none; }
+  .spec-key { font-size: 12px; color: var(--t2); }
+  .spec-val { font-family: var(--font-mono); font-size: 12px; color: var(--t1); font-weight: 500; background: var(--surface-2); padding: 2px 8px; border-radius: 5px; }
+  .spec-val.accent { background: var(--accent-dim); color: var(--accent-text); }
+
+  /* Screen flows */
+  .flow-row { display: flex; align-items: center; gap: 0; flex-wrap: wrap; }
+  .flow-node { background: var(--surface); border: 1.5px solid var(--border); border-radius: 10px; padding: 8px 14px; font-size: 13px; font-weight: 500; white-space: nowrap; box-shadow: 0 1px 4px rgba(20,35,70,0.06); }
+  .flow-node.start { background: var(--t1); color: #fff; border-color: var(--t1); }
+  .flow-node.end { background: var(--accent-dim); color: var(--accent-text); border-color: var(--accent); }
+  .flow-arrow { display: flex; align-items: center; padding: 0 6px; color: var(--t3); font-size: 16px; }
+
+  /* UX Rules */
+  .rule-item { display: flex; gap: 12px; padding: 12px 0; border-bottom: 1px solid var(--surface-2); align-items: flex-start; }
+  .rule-item:last-child { border-bottom: none; }
+  .rule-num { font-family: var(--font-mono); font-size: 11px; font-weight: 600; color: var(--accent); background: var(--accent-dim); border-radius: 6px; padding: 2px 7px; flex-shrink: 0; min-width: 28px; text-align: center; margin-top: 1px; }
+  .rule-text strong { font-weight: 600; color: var(--t1); display: block; margin-bottom: 2px; }
+  .rule-text span { font-size: 12px; color: var(--t2); }
+
+  /* Interaction spec */
+  .interaction-card { background: var(--surface); border: 1px solid var(--border); border-radius: 14px; padding: 16px 18px; margin-bottom: 10px; }
+  .interaction-title { font-size: 14px; font-weight: 600; color: var(--t1); margin-bottom: 8px; }
+  .interaction-detail { font-size: 12px; color: var(--t2); line-height: 1.7; }
+  .tag-inline { display: inline-block; background: var(--surface-2); color: var(--t2); border-radius: 5px; padding: 1px 7px; font-family: var(--font-mono); font-size: 10px; margin: 1px 2px; }
+
+  /* Table */
+  table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  th { text-align: left; padding: 8px 12px; background: var(--surface-2); color: var(--t2); font-weight: 500; font-size: 11px; letter-spacing: 0.3px; }
+  td { padding: 10px 12px; border-bottom: 1px solid var(--surface-2); color: var(--t1); vertical-align: top; }
+  td code { font-family: var(--font-mono); font-size: 11px; background: var(--surface-2); padding: 1px 6px; border-radius: 4px; color: var(--t2); }
+  tr:last-child td { border-bottom: none; }
+
+  /* TOC */
+  .toc { background: var(--surface); border: 1px solid var(--border); border-radius: 14px; padding: 18px 22px; margin-bottom: 40px; }
+  .toc-title { font-size: 12px; font-weight: 600; color: var(--t3); letter-spacing: 0.5px; text-transform: uppercase; margin-bottom: 10px; }
+  .toc-list { display: flex; gap: 6px; flex-wrap: wrap; }
+  .toc-item { font-size: 12px; color: var(--accent-text); background: var(--accent-dim); border-radius: 20px; padding: 4px 12px; text-decoration: none; font-weight: 500; }
+  .toc-item:hover { background: var(--accent); color: #fff; }
+
+  /* Note box */
+  .note { background: #fffbf0; border: 1.5px solid #f0d060; border-radius: 10px; padding: 12px 16px; font-size: 12px; color: #806010; line-height: 1.7; margin-top: 10px; }
+  .note strong { font-weight: 600; }
+
+  /* Section anchor */
+  h2[id] { scroll-margin-top: 24px; }
+</style>
+</head>
+<body>
+<div class="page">
+
+  <!-- Header -->
+  <div class="doc-header">
+    <div class="doc-title">피부일기 — Design Spec</div>
+    <div class="doc-subtitle">개발 핸드오프 문서 · 디자이너 → 엔지니어</div>
+    <div class="doc-meta">
+      <span>Version 1.0</span>
+      <span>2026-05-06</span>
+      <span>Platform: Mobile Web (React) → Android</span>
+      <span>Target: 1min record flow</span>
+    </div>
+  </div>
+
+  <!-- TOC -->
+  <div class="toc">
+    <div class="toc-title">목차</div>
+    <div class="toc-list">
+      <a href="#colors" class="toc-item">컬러 토큰</a>
+      <a href="#typography" class="toc-item">타이포그래피</a>
+      <a href="#spacing" class="toc-item">스페이싱 · 반경</a>
+      <a href="#components" class="toc-item">컴포넌트 스펙</a>
+      <a href="#screens" class="toc-item">화면별 스펙</a>
+      <a href="#interactions" class="toc-item">인터랙션</a>
+      <a href="#ux-rules" class="toc-item">UX 원칙</a>
+      <a href="#android" class="toc-item">안드로이드 확장</a>
+    </div>
+  </div>
+
+  <!-- 1. Colors -->
+  <div class="section" id="colors">
+    <div class="section-title">컬러 토큰</div>
+    <div class="section-sub">파일: tokens/colors.json · tokens/colors.css — CSS 변수로 바로 사용 가능</div>
+
+    <div class="card" style="margin-bottom:14px;">
+      <div style="font-size:13px;font-weight:600;color:var(--t2);margin-bottom:14px;">Light Mode</div>
+      <div class="swatch-row">
+        <div class="swatch"><div class="swatch-box" style="background:#F2F5FA;"></div><div class="swatch-name">--color-bg</div><div class="swatch-hex">#F2F5FA</div></div>
+        <div class="swatch"><div class="swatch-box" style="background:#FFFFFF;border:1px solid #eee;"></div><div class="swatch-name">--color-surface</div><div class="swatch-hex">#FFFFFF</div></div>
+        <div class="swatch"><div class="swatch-box" style="background:#EDF0F7;"></div><div class="swatch-name">--color-surface-2</div><div class="swatch-hex">#EDF0F7</div></div>
+        <div class="swatch"><div class="swatch-box" style="background:#E0E6F0;"></div><div class="swatch-name">--color-surface-3</div><div class="swatch-hex">#E0E6F0</div></div>
+        <div class="swatch"><div class="swatch-box" style="background:#18202E;"></div><div class="swatch-name">--color-text-primary</div><div class="swatch-hex">#18202E</div></div>
+        <div class="swatch"><div class="swatch-box" style="background:#5A6378;"></div><div class="swatch-name">--color-text-secondary</div><div class="swatch-hex">#5A6378</div></div>
+        <div class="swatch"><div class="swatch-box" style="background:#9BA3BC;"></div><div class="swatch-name">--color-text-tertiary</div><div class="swatch-hex">#9BA3BC</div></div>
+        <div class="swatch"><div class="swatch-box" style="background:#6DBF8A;"></div><div class="swatch-name">--color-accent</div><div class="swatch-hex">#6DBF8A</div></div>
+        <div class="swatch"><div class="swatch-box" style="background:#DCF0E5;"></div><div class="swatch-name">--color-accent-dim</div><div class="swatch-hex">#DCF0E5</div></div>
+        <div class="swatch"><div class="swatch-box" style="background:#26694A;"></div><div class="swatch-name">--color-accent-text</div><div class="swatch-hex">#26694A</div></div>
+      </div>
+    </div>
+
+    <div class="card" style="margin-bottom:14px;background:#141826;">
+      <div style="font-size:13px;font-weight:600;color:#8890AA;margin-bottom:14px;">Dark Mode</div>
+      <div class="swatch-row">
+        <div class="swatch"><div class="swatch-box" style="background:#0C0F1A;border:1px solid #222;"></div><div class="swatch-name" style="color:#44506A;">--color-bg</div><div class="swatch-hex" style="color:#8890AA;">#0C0F1A</div></div>
+        <div class="swatch"><div class="swatch-box" style="background:#141826;border:1px solid #222;"></div><div class="swatch-name" style="color:#44506A;">--color-surface</div><div class="swatch-hex" style="color:#8890AA;">#141826</div></div>
+        <div class="swatch"><div class="swatch-box" style="background:#1B2135;"></div><div class="swatch-name" style="color:#44506A;">--color-surface-2</div><div class="swatch-hex" style="color:#8890AA;">#1B2135</div></div>
+        <div class="swatch"><div class="swatch-box" style="background:#232C42;"></div><div class="swatch-name" style="color:#44506A;">--color-surface-3</div><div class="swatch-hex" style="color:#8890AA;">#232C42</div></div>
+        <div class="swatch"><div class="swatch-box" style="background:#EEF2FA;"></div><div class="swatch-name" style="color:#44506A;">--color-text-primary</div><div class="swatch-hex" style="color:#8890AA;">#EEF2FA</div></div>
+        <div class="swatch"><div class="swatch-box" style="background:#72C98E;"></div><div class="swatch-name" style="color:#44506A;">--color-accent</div><div class="swatch-hex" style="color:#8890AA;">#72C98E</div></div>
+        <div class="swatch"><div class="swatch-box" style="background:#162B22;"></div><div class="swatch-name" style="color:#44506A;">--color-accent-dim</div><div class="swatch-hex" style="color:#8890AA;">#162B22</div></div>
+      </div>
+    </div>
+
+    <div class="card" style="background:#0A0A0F;">
+      <div style="font-size:13px;font-weight:600;color:#8890AA;margin-bottom:14px;">Camera Screen (항상 다크)</div>
+      <div class="swatch-row">
+        <div class="swatch"><div class="swatch-box" style="background:#0A0A0F;border:1px solid #222;"></div><div class="swatch-name" style="color:#444;">--camera-bg</div><div class="swatch-hex" style="color:#666;">#0A0A0F</div></div>
+        <div class="swatch"><div class="swatch-box" style="background:rgba(114,201,142,0.7);"></div><div class="swatch-name" style="color:#444;">--camera-guide-oval</div><div class="swatch-hex" style="color:#666;">rgba(114,201,142,.7)</div></div>
+        <div class="swatch"><div class="swatch-box" style="background:rgba(255,210,50,0.5);"></div><div class="swatch-name" style="color:#444;">--camera-guide-line</div><div class="swatch-hex" style="color:#666;">rgba(255,210,50,.5)</div></div>
+        <div class="swatch"><div class="swatch-box" style="background:#72C98E;"></div><div class="swatch-name" style="color:#444;">--camera-check-ok</div><div class="swatch-hex" style="color:#666;">#72C98E</div></div>
+        <div class="swatch"><div class="swatch-box" style="background:rgba(255,160,40,0.9);"></div><div class="swatch-name" style="color:#444;">--camera-check-warn</div><div class="swatch-hex" style="color:#666;">rgba(255,160,40,.9)</div></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 2. Typography -->
+  <div class="section" id="typography">
+    <div class="section-title">타이포그래피</div>
+    <div class="section-sub">두 가지 폰트 조합 — 숫자/대형 디스플레이: DM Sans · 한글/일반 UI: Noto Sans KR</div>
+    <div class="card">
+      <div class="type-row">
+        <div class="type-meta">Hero Date<br/>58px / 700<br/>DM Sans<br/>letter-spacing: -3px</div>
+        <div class="type-specimen" style="font-family:'DM Sans';font-size:58px;font-weight:700;letter-spacing:-3px;line-height:1;">29</div>
+      </div>
+      <div class="type-row">
+        <div class="type-meta">Page Title<br/>20px / 700<br/>Noto Sans KR<br/>letter-spacing: -0.5px</div>
+        <div class="type-specimen" style="font-size:20px;font-weight:700;letter-spacing:-0.5px;">수요일</div>
+      </div>
+      <div class="type-row">
+        <div class="type-meta">Section Title<br/>16px / 600<br/>Noto Sans KR</div>
+        <div class="type-specimen" style="font-size:16px;font-weight:600;">오늘 기록하기</div>
+      </div>
+      <div class="type-row">
+        <div class="type-meta">Body<br/>14px / 400<br/>Noto Sans KR<br/>line-height: 1.6</div>
+        <div class="type-specimen" style="font-size:14px;">사진을 찍으면 나중에 변화를 비교할 수 있어요.</div>
+      </div>
+      <div class="type-row">
+        <div class="type-meta">Label<br/>12px / 500<br/>Noto Sans KR<br/>letter-spacing: 0.3px</div>
+        <div class="type-specimen" style="font-size:12px;font-weight:500;letter-spacing:0.3px;color:var(--t2);">오늘 기록 · 생활 기록</div>
+      </div>
+      <div class="type-row">
+        <div class="type-meta">Caption<br/>11px / 400<br/>Noto Sans KR</div>
+        <div class="type-specimen" style="font-size:11px;color:var(--t3);">안 찍어도 괜찮아요 — 언제든지</div>
+      </div>
+      <div class="type-row">
+        <div class="type-meta">Section Label<br/>11px / 500<br/>uppercase<br/>letter-spacing: 0.6px</div>
+        <div class="type-specimen" style="font-size:11px;font-weight:500;letter-spacing:0.6px;text-transform:uppercase;color:var(--t3);">오늘 기록</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 3. Spacing & Radius -->
+  <div class="section" id="spacing">
+    <div class="section-title">스페이싱 · Border Radius</div>
+    <div class="grid-2">
+      <div class="card">
+        <div style="font-size:13px;font-weight:600;color:var(--t2);margin-bottom:12px;">Spacing Scale</div>
+        <table>
+          <thead><tr><th>Token</th><th>Value</th><th>사용 예</th></tr></thead>
+          <tbody>
+            <tr><td><code>--space-xs</code></td><td><code>4px</code></td><td>아이콘 내부, dot</td></tr>
+            <tr><td><code>--space-sm</code></td><td><code>8px</code></td><td>칩 내부, 작은 gap</td></tr>
+            <tr><td><code>--space-md</code></td><td><code>12px</code></td><td>카드 내부 간격</td></tr>
+            <tr><td><code>--space-lg</code></td><td><code>16px</code></td><td>화면 좌우 패딩</td></tr>
+            <tr><td><code>--space-xl</code></td><td><code>20px</code></td><td>섹션 간격</td></tr>
+            <tr><td><code>--space-2xl</code></td><td><code>24px</code></td><td>헤더 패딩</td></tr>
+            <tr><td><code>--space-3xl</code></td><td><code>32px</code></td><td>섹션 타이틀 하단</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="card">
+        <div style="font-size:13px;font-weight:600;color:var(--t2);margin-bottom:12px;">Border Radius</div>
+        <table>
+          <thead><tr><th>Token</th><th>Value</th><th>사용 예</th></tr></thead>
+          <tbody>
+            <tr><td><code>--radius-sm</code></td><td><code>8px</code></td><td>체크박스, 태그</td></tr>
+            <tr><td><code>--radius-md</code></td><td><code>12px</code></td><td>버튼, 작은 카드</td></tr>
+            <tr><td><code>--radius-lg</code></td><td><code>18px</code></td><td>카드, 시트</td></tr>
+            <tr><td><code>--radius-xl</code></td><td><code>22px</code></td><td>메인 CTA 카드</td></tr>
+            <tr><td><code>--radius-full</code></td><td><code>9999px</code></td><td>칩, 배지, 원형</td></tr>
+          </tbody>
+        </table>
+        <div style="margin-top:14px;font-size:13px;font-weight:600;color:var(--t2);margin-bottom:8px;">Touch Target</div>
+        <div class="spec-row"><div class="spec-key">최소 터치 영역</div><div class="spec-val accent">48 × 48 dp (Android) / 44pt (iOS)</div></div>
+        <div class="spec-row"><div class="spec-key">하단 네비 아이템</div><div class="spec-val">52px height</div></div>
+        <div class="spec-row"><div class="spec-key">메인 CTA 버튼</div><div class="spec-val">48px height min</div></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 4. Components -->
+  <div class="section" id="components">
+    <div class="section-title">컴포넌트 스펙</div>
+    <div class="grid-2" style="margin-bottom:14px;">
+      <!-- Primary Button -->
+      <div class="card">
+        <div style="font-size:13px;font-weight:600;color:var(--t2);margin-bottom:12px;">Primary Button (CTA)</div>
+        <div style="background:var(--accent);color:#fff;border:none;border-radius:14px;padding:14px 0;text-align:center;font-family:'Noto Sans KR';font-size:15px;font-weight:600;margin-bottom:14px;">오늘 기록하기</div>
+        <div class="spec-row"><div class="spec-key">background</div><div class="spec-val"><code>--color-accent</code></div></div>
+        <div class="spec-row"><div class="spec-key">height</div><div class="spec-val">48px</div></div>
+        <div class="spec-row"><div class="spec-key">border-radius</div><div class="spec-val">14px</div></div>
+        <div class="spec-row"><div class="spec-key">font</div><div class="spec-val">15px / 600</div></div>
+        <div class="spec-row"><div class="spec-key">active state</div><div class="spec-val">opacity: 0.85</div></div>
+      </div>
+      <!-- Secondary Button -->
+      <div class="card">
+        <div style="font-size:13px;font-weight:600;color:var(--t2);margin-bottom:12px;">Secondary Button</div>
+        <div style="border:1.5px solid var(--border);color:var(--t2);border-radius:12px;padding:11px 0;text-align:center;font-family:'Noto Sans KR';font-size:14px;font-weight:500;margin-bottom:14px;">수정</div>
+        <div class="spec-row"><div class="spec-key">border</div><div class="spec-val">1.5px solid --color-border</div></div>
+        <div class="spec-row"><div class="spec-key">height</div><div class="spec-val">44px</div></div>
+        <div class="spec-row"><div class="spec-key">border-radius</div><div class="spec-val">12px</div></div>
+        <div class="spec-row"><div class="spec-key">font</div><div class="spec-val">14px / 500</div></div>
+      </div>
+    </div>
+    <div class="grid-2" style="margin-bottom:14px;">
+      <!-- Card -->
+      <div class="card">
+        <div style="font-size:13px;font-weight:600;color:var(--t2);margin-bottom:12px;">Card</div>
+        <div class="spec-row"><div class="spec-key">background</div><div class="spec-val"><code>--color-surface</code></div></div>
+        <div class="spec-row"><div class="spec-key">border</div><div class="spec-val">1px solid --color-border</div></div>
+        <div class="spec-row"><div class="spec-key">border-radius</div><div class="spec-val">18px (standard) / 22px (hero)</div></div>
+        <div class="spec-row"><div class="spec-key">padding</div><div class="spec-val">14–18px</div></div>
+        <div class="spec-row"><div class="spec-key">shadow (light)</div><div class="spec-val">0 2px 12px rgba(20,35,70,.07)</div></div>
+        <div class="spec-row"><div class="spec-key">shadow (dark)</div><div class="spec-val">0 2px 12px rgba(0,0,0,.25)</div></div>
+      </div>
+      <!-- Chip / Tag -->
+      <div class="card">
+        <div style="font-size:13px;font-weight:600;color:var(--t2);margin-bottom:12px;">Chip / Tag</div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px;">
+          <span style="background:var(--accent-dim);color:var(--accent-text);border-radius:8px;padding:4px 9px;font-size:11px;font-weight:600;">물 7잔</span>
+          <span style="background:var(--surface-2);color:var(--t2);border-radius:8px;padding:4px 9px;font-size:11px;">유제품</span>
+        </div>
+        <div class="spec-row"><div class="spec-key">Default bg</div><div class="spec-val"><code>--color-surface-2</code></div></div>
+        <div class="spec-row"><div class="spec-key">Active bg</div><div class="spec-val"><code>--color-accent-dim</code></div></div>
+        <div class="spec-row"><div class="spec-key">border-radius</div><div class="spec-val">8px (rectangular) / 20px (pill)</div></div>
+        <div class="spec-row"><div class="spec-key">padding</div><div class="spec-val">4px 9px</div></div>
+        <div class="spec-row"><div class="spec-key">font</div><div class="spec-val">11–12px</div></div>
+      </div>
+    </div>
+    <div class="grid-2">
+      <!-- Photo Slot -->
+      <div class="card">
+        <div style="font-size:13px;font-weight:600;color:var(--t2);margin-bottom:12px;">Photo Slot</div>
+        <div style="display:flex;gap:8px;margin-bottom:14px;">
+          <div style="flex:1;aspect-ratio:3/4;border-radius:14px;border:1.5px dashed var(--surface-3);background:var(--surface-2);display:flex;align-items:center;justify-content:center;font-size:11px;color:var(--t3);">정면</div>
+          <div style="flex:1;aspect-ratio:3/4;border-radius:14px;background:var(--surface-3);display:flex;align-items:center;justify-content:center;font-size:11px;color:var(--t2);">찍음</div>
+        </div>
+        <div class="spec-row"><div class="spec-key">aspect ratio</div><div class="spec-val accent">3 : 4</div></div>
+        <div class="spec-row"><div class="spec-key">empty border</div><div class="spec-val">1.5px dashed --color-surface-3</div></div>
+        <div class="spec-row"><div class="spec-key">filled border</div><div class="spec-val">none</div></div>
+        <div class="spec-row"><div class="spec-key">border-radius</div><div class="spec-val">14px</div></div>
+        <div class="note"><strong>중요:</strong> 빈 슬롯은 에러처럼 보이지 않도록 점선 + 연한 배경. 빨간색·주황색 사용 금지.</div>
+      </div>
+      <!-- Bottom Nav -->
+      <div class="card">
+        <div style="font-size:13px;font-weight:600;color:var(--t2);margin-bottom:12px;">Bottom Navigation</div>
+        <div style="display:flex;justify-content:space-around;border-top:1px solid var(--border);padding:10px 0 6px;margin-bottom:14px;">
+          {['홈','기록','갤러리','비교'].map(l => `<div style="display:flex;flex-direction:column;align-items:center;gap:3px;"><div style="width:22px;height:22px;border-radius:4px;background:var(--surface-2);"></div><span style="font-size:9px;color:var(--t3);">${l}</span></div>`).join('')}
+        </div>
+        <div class="spec-row"><div class="spec-key">height</div><div class="spec-val">52px (+ safe area)</div></div>
+        <div class="spec-row"><div class="spec-key">background</div><div class="spec-val">rgba(255,255,255,0.95) + blur(20px)</div></div>
+        <div class="spec-row"><div class="spec-key">active icon</div><div class="spec-val accent">--color-accent</div></div>
+        <div class="spec-row"><div class="spec-key">inactive icon</div><div class="spec-val">--color-text-tertiary</div></div>
+        <div class="spec-row"><div class="spec-key">label font</div><div class="spec-val">10px</div></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 5. Screen Specs -->
+  <div class="section" id="screens">
+    <div class="section-title">화면별 스펙</div>
+
+    <table style="margin-bottom:20px;">
+      <thead>
+        <tr><th>화면</th><th>주요 컴포넌트</th><th>Navigation</th><th>특이 사항</th></tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><strong>홈 (미기록)</strong></td>
+          <td>날짜 Hero, WeekStrip, PhotoSlot ×3, CTA Button, 최근 기록 Row</td>
+          <td>Bottom Nav · active: 홈</td>
+          <td>날짜 58px Bold, "안 찍어도 돼요" 문구 필수</td>
+        </tr>
+        <tr>
+          <td><strong>홈 (완료)</strong></td>
+          <td>완료 뱃지, PhotoSlot (filled) ×3, 수정 / 비교 Button, 생활기록 Chip</td>
+          <td>Bottom Nav · active: 홈</td>
+          <td>완료 표시는 조용한 초록 (뱃지, 애니 없음)</td>
+        </tr>
+        <tr>
+          <td><strong>카메라 가이드</strong></td>
+          <td>뷰파인더, 얼굴 Oval SVG, 눈높이 Line, 조건 체크리스트, 셔터 버튼</td>
+          <td>모달 풀스크린 (Nav 없음)</td>
+          <td>항상 다크. Oval: stroke-dasharray 8 5</td>
+        </tr>
+        <tr>
+          <td><strong>카메라 각도 전환</strong></td>
+          <td>각도 Progress (done/active), Toast, 회전 화살표 SVG, 완료 썸네일</td>
+          <td>모달 풀스크린</td>
+          <td>정면 완료 → 토스트 자동 노출 (2초 후 fade)</td>
+        </tr>
+        <tr>
+          <td><strong>생활 기록</strong></td>
+          <td>물 잔 수 탭 그리드, 음식 ToggleTag, 운동 ToggleTag, 체크박스 리스트, 메모 TextArea</td>
+          <td>Bottom Nav · active: 기록</td>
+          <td>전항목 선택 사항 — "건너뛰기" 아니라 "입력 없이 저장" 문구</td>
+        </tr>
+        <tr>
+          <td><strong>기록 상세</strong></td>
+          <td>날짜 Hero, 주간 미니캘린더, PhotoSlot ×3, 생활기록 Chip, 메모 Card</td>
+          <td>Bottom Nav · active: 갤러리</td>
+          <td>주간 캘린더 탭으로 날짜 이동, "이 날짜로 비교하기" 버튼</td>
+        </tr>
+        <tr>
+          <td><strong>비교 Step1 날짜</strong></td>
+          <td>Step Indicator, 빠른선택 프리셋, 날짜 범위 Card, 미니 캘린더</td>
+          <td>Bottom Nav · active: 비교</td>
+          <td>기록 있는 날짜에만 Dot 표시</td>
+        </tr>
+        <tr>
+          <td><strong>비교 Step2 각도</strong></td>
+          <td>Step Indicator, 각도 Card (썸네일+레이블+체크), 비활성 안내 문구</td>
+          <td>Bottom Nav · active: 비교</td>
+          <td>두 날짜에 모두 사진이 있는 각도만 활성화</td>
+        </tr>
+        <tr>
+          <td><strong>비교 Step3 드래그</strong></td>
+          <td>드래그 핸들, 분할 뷰, 날짜 레이블, Info Strip, 타임라인 스크러버</td>
+          <td>항상 다크 + Bottom Nav</td>
+          <td>핸들 drag → 분할 % 실시간 변경. cursor: ew-resize</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- 6. Interactions -->
+  <div class="section" id="interactions">
+    <div class="section-title">인터랙션 명세</div>
+
+    <div class="interaction-card">
+      <div class="interaction-title">비교 화면 — 드래그 슬라이더</div>
+      <div class="interaction-detail">
+        분할선(divider)과 핸들이 동일한 <code class="tag-inline">left: {split}%</code> 값으로 제어됩니다.<br>
+        <strong>구현:</strong> mousedown/touchstart → document에 mousemove/touchmove 등록 → left % 계산 → setState → mouseup에서 리스너 제거<br>
+        <strong>범위:</strong> 5% ~ 95% (edge clamp)<br>
+        <strong>초기값:</strong> 50% (중앙)<br>
+        <strong>커서:</strong> <code class="tag-inline">cursor: ew-resize</code> on drag area
+      </div>
+    </div>
+
+    <div class="interaction-card">
+      <div class="interaction-title">카메라 조건 체크리스트</div>
+      <div class="interaction-detail">
+        <strong>조건:</strong> 조명 충분, 얼굴 가이드 안에, 정면 응시 (3가지)<br>
+        <strong>OK 상태:</strong> <code class="tag-inline">--camera-check-ok</code> 원형 + 체크 아이콘<br>
+        <strong>경고 상태:</strong> <code class="tag-inline">--camera-check-warn</code> 원형 + dot<br>
+        실제 구현 시 face detection API 연동 권장 (MVP는 수동 탭으로 대체 가능)
+      </div>
+    </div>
+
+    <div class="interaction-card">
+      <div class="interaction-title">물 잔 수 입력</div>
+      <div class="interaction-detail">
+        1~8 버튼 탭 → <code class="tag-inline">n &lt;= selected</code> 인 버튼 모두 액센트로 채워짐 (fill-up 방식)<br>
+        <strong>저장:</strong> 선택한 숫자 그대로 저장. 0이면 빈 값으로 처리 (null, 0 구분 필요)
+      </div>
+    </div>
+
+    <div class="interaction-card">
+      <div class="interaction-title">각도 전환 토스트</div>
+      <div class="interaction-detail">
+        정면 촬영 완료 즉시 노출 → 2000ms 후 fade out (opacity 1→0, duration 300ms)<br>
+        CSS: <code class="tag-inline">transition: opacity 300ms ease</code><br>
+        토스트가 사라진 후에도 상단 progress dot에 완료 상태 유지
+      </div>
+    </div>
+
+    <div class="interaction-card">
+      <div class="interaction-title">Bottom Nav 다크 모드 분리</div>
+      <div class="interaction-detail">
+        카메라 화면(CameraGuide, CameraAngleSwitch)은 항상 다크 → NavBar에 <code class="tag-inline">dark=false</code> 전달<br>
+        그 외 화면은 사용자 설정 테마 따름 (<code class="tag-inline">data-theme="dark"</code> 전역 토글)
+      </div>
+    </div>
+  </div>
+
+  <!-- 7. UX Rules -->
+  <div class="section" id="ux-rules">
+    <div class="section-title">UX 원칙 (구현 가이드)</div>
+    <div class="card">
+      <div class="rule-item">
+        <div class="rule-num">01</div>
+        <div class="rule-text"><strong>죄책감 없는 빈 상태</strong><span>빈 슬롯은 점선 테두리 + 연한 배경. 빨간색·느낌표·"아직 안 했어요" 등 압박 문구 금지. 대신 "안 찍어도 괜찮아요"를 모든 선택 항목 근처에 작성.</span></div>
+      </div>
+      <div class="rule-item">
+        <div class="rule-num">02</div>
+        <div class="rule-text"><strong>한 화면 = 하나의 행동</strong><span>각 화면의 CTA는 1개. 보조 액션(건너뛰기, 갤러리)은 시각적으로 약하게 처리.</span></div>
+      </div>
+      <div class="rule-item">
+        <div class="rule-num">03</div>
+        <div class="rule-text"><strong>완료 상태는 조용하게</strong><span>완료 피드백 = 작은 초록 체크 뱃지. 애니메이션·사운드·진동 없음. 칭찬 문구("잘 했어요!") 없음.</span></div>
+      </div>
+      <div class="rule-item">
+        <div class="rule-num">04</div>
+        <div class="rule-text"><strong>스트릭은 있되 압박은 없음</strong><span>주간 캘린더에 기록된 날 표시. 못 한 날에 별도 강조 없음. "X일 연속" 뱃지는 긍정 강화용으로만.</span></div>
+      </div>
+      <div class="rule-item">
+        <div class="rule-num">05</div>
+        <div class="rule-text"><strong>모든 입력 항목은 선택</strong><span>사진 없어도 저장, 생활기록 없어도 저장. 필수 항목 0개. 저장 버튼 항상 활성.</span></div>
+      </div>
+      <div class="rule-item">
+        <div class="rule-num">06</div>
+        <div class="rule-text"><strong>반복 피로 방지</strong><span>매일 보는 홈 화면은 날짜만 바뀌는 구조. 새로운 요소 추가 금지. 간결함 유지.</span></div>
+      </div>
+      <div class="rule-item">
+        <div class="rule-num">07</div>
+        <div class="rule-text"><strong>에러 메시지 최소화</strong><span>비교 화면에서 사진 없는 날짜 선택 시 → 에러 팝업 아닌 해당 각도 비활성 + 인라인 안내. 빨간 토스트 금지.</span></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 8. Android -->
+  <div class="section" id="android">
+    <div class="section-title">안드로이드 앱 확장 원칙</div>
+    <div class="card">
+      <table>
+        <thead><tr><th>항목</th><th>웹 구현</th><th>Android 대응</th></tr></thead>
+        <tbody>
+          <tr><td>Bottom Nav</td><td>Custom div + flex</td><td>BottomNavigationView (Material3)</td></tr>
+          <tr><td>카메라</td><td><code>input[capture=camera]</code></td><td>CameraX API</td></tr>
+          <tr><td>사진 갤러리</td><td><code>input[type=file]</code></td><td>PhotoPicker API (Android 13+)</td></tr>
+          <tr><td>컬러 토큰</td><td>CSS Custom Properties</td><td>Material You dynamic color + XML values</td></tr>
+          <tr><td>터치 타겟</td><td>44px min</td><td>48dp min (권장)</td></tr>
+          <tr><td>폰트</td><td>Noto Sans KR + DM Sans</td><td>동일 (Google Fonts)</td></tr>
+          <tr><td>다크 모드</td><td>data-theme toggle</td><td>UiModeManager / AppCompatDelegate</td></tr>
+          <tr><td>Safe Area</td><td>env(safe-area-inset-*)</td><td>WindowInsetsCompat</td></tr>
+          <tr><td>Face Guide Oval</td><td>SVG inline</td><td>Canvas drawOval + dashed PathEffect</td></tr>
+          <tr><td>비교 슬라이더</td><td>React state + mouse/touch</td><td>Custom View + MotionEvent</td></tr>
+        </tbody>
+      </table>
+      <div class="note" style="margin-top:14px;">
+        <strong>설계 원칙:</strong> CSS 변수 → Android XML colors.xml 1:1 매핑 가능하도록 토큰명 통일. 컴포넌트 구조(Card, Chip, PhotoSlot)는 Android Composable과 동일 추상화 수준 유지.
+      </div>
+    </div>
+  </div>
+
+</div>
+</body>
+</html>

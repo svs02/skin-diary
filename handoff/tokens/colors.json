@@ -1,0 +1,88 @@
+{
+  "$schema": "https://design-tokens.org/schema",
+  "skin-diary": {
+    "light": {
+      "color": {
+        "bg":          { "$value": "#F2F5FA", "$type": "color", "$description": "앱 최상위 배경" },
+        "surface":     { "$value": "#FFFFFF", "$type": "color", "$description": "카드, 시트 배경" },
+        "surface-2":   { "$value": "#EDF0F7", "$type": "color", "$description": "인풋, 서브 배경" },
+        "surface-3":   { "$value": "#E0E6F0", "$type": "color", "$description": "비활성 탭, 구분선" },
+        "text-primary":   { "$value": "#18202E", "$type": "color", "$description": "본문 1순위 텍스트" },
+        "text-secondary": { "$value": "#5A6378", "$type": "color", "$description": "서브 텍스트, 레이블" },
+        "text-tertiary":  { "$value": "#9BA3BC", "$type": "color", "$description": "플레이스홀더, 힌트" },
+        "accent":         { "$value": "#6DBF8A", "$type": "color", "$description": "완료 상태, CTA, 포인트" },
+        "accent-dim":     { "$value": "#DCF0E5", "$type": "color", "$description": "액센트 배경 (뱃지, 탭 활성)" },
+        "accent-text":    { "$value": "#26694A", "$type": "color", "$description": "액센트 배경 위 텍스트" },
+        "border":         { "$value": "rgba(80,110,170,0.1)", "$type": "color", "$description": "카드 테두리" },
+        "nav-bg":         { "$value": "rgba(255,255,255,0.95)", "$type": "color", "$description": "하단 네비게이션 배경" }
+      }
+    },
+    "dark": {
+      "color": {
+        "bg":          { "$value": "#0C0F1A", "$type": "color" },
+        "surface":     { "$value": "#141826", "$type": "color" },
+        "surface-2":   { "$value": "#1B2135", "$type": "color" },
+        "surface-3":   { "$value": "#232C42", "$type": "color" },
+        "text-primary":   { "$value": "#EEF2FA", "$type": "color" },
+        "text-secondary": { "$value": "#8890AA", "$type": "color" },
+        "text-tertiary":  { "$value": "#44506A", "$type": "color" },
+        "accent":         { "$value": "#72C98E", "$type": "color" },
+        "accent-dim":     { "$value": "#162B22", "$type": "color" },
+        "accent-text":    { "$value": "#72C98E", "$type": "color" },
+        "border":         { "$value": "rgba(100,140,220,0.07)", "$type": "color" },
+        "nav-bg":         { "$value": "rgba(20,24,38,0.97)", "$type": "color" }
+      }
+    },
+    "camera": {
+      "color": {
+        "bg":            { "$value": "#0A0A0F", "$type": "color", "$description": "카메라 뷰파인더 배경" },
+        "viewfinder":    { "$value": "#111118", "$type": "color" },
+        "guide-oval":    { "$value": "rgba(114,201,142,0.7)", "$type": "color", "$description": "얼굴 가이드 타원 색상" },
+        "guide-line":    { "$value": "rgba(255,210,50,0.5)", "$type": "color", "$description": "눈높이 가이드라인" },
+        "check-ok":      { "$value": "#72C98E", "$type": "color", "$description": "조건 충족 상태" },
+        "check-warn":    { "$value": "rgba(255,160,40,0.9)", "$type": "color", "$description": "조건 미충족 상태" },
+        "shutter":       { "$value": "#FFFFFF", "$type": "color" },
+        "toast-bg":      { "$value": "rgba(114,201,142,0.12)", "$type": "color" },
+        "toast-border":  { "$value": "rgba(114,201,142,0.25)", "$type": "color" }
+      }
+    },
+    "spacing": {
+      "xs":  { "$value": "4px",  "$type": "dimension" },
+      "sm":  { "$value": "8px",  "$type": "dimension" },
+      "md":  { "$value": "12px", "$type": "dimension" },
+      "lg":  { "$value": "16px", "$type": "dimension" },
+      "xl":  { "$value": "20px", "$type": "dimension" },
+      "2xl": { "$value": "24px", "$type": "dimension" },
+      "3xl": { "$value": "32px", "$type": "dimension" }
+    },
+    "radius": {
+      "sm":    { "$value": "8px",  "$type": "dimension" },
+      "md":    { "$value": "12px", "$type": "dimension" },
+      "lg":    { "$value": "18px", "$type": "dimension" },
+      "xl":    { "$value": "22px", "$type": "dimension" },
+      "full":  { "$value": "9999px", "$type": "dimension" }
+    },
+    "typography": {
+      "font-display": { "$value": "'DM Sans', sans-serif", "$type": "fontFamily", "$description": "숫자, 대형 날짜 강조" },
+      "font-body":    { "$value": "'Noto Sans KR', sans-serif", "$type": "fontFamily", "$description": "일반 UI 텍스트" },
+      "size-hero":    { "$value": "58px", "$type": "fontSize", "$description": "홈 날짜 대형 숫자" },
+      "size-title":   { "$value": "20px", "$type": "fontSize" },
+      "size-section": { "$value": "16px", "$type": "fontSize" },
+      "size-body":    { "$value": "14px", "$type": "fontSize" },
+      "size-label":   { "$value": "12px", "$type": "fontSize" },
+      "size-caption": { "$value": "11px", "$type": "fontSize" },
+      "size-micro":   { "$value": "10px", "$type": "fontSize" },
+      "weight-bold":   { "$value": "700", "$type": "fontWeight" },
+      "weight-semi":   { "$value": "600", "$type": "fontWeight" },
+      "weight-medium": { "$value": "500", "$type": "fontWeight" },
+      "weight-regular":{ "$value": "400", "$type": "fontWeight" },
+      "weight-light":  { "$value": "300", "$type": "fontWeight" }
+    },
+    "shadow": {
+      "sm": { "$value": "0 2px 12px rgba(20,35,70,0.07)", "$type": "shadow" },
+      "lg": { "$value": "0 8px 32px rgba(20,35,70,0.10)", "$type": "shadow" },
+      "dark-sm": { "$value": "0 2px 12px rgba(0,0,0,0.25)", "$type": "shadow" },
+      "dark-lg": { "$value": "0 8px 40px rgba(0,0,0,0.35)", "$type": "shadow" }
+    }
+  }
+}
