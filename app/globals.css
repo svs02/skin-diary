@@ -93,6 +93,13 @@
   --font-display: var(--font-dm-sans), 'DM Sans', sans-serif;
   --font-body:    var(--font-noto-sans-kr), 'Noto Sans KR', sans-serif;
 
+  /* Typography — display tier (정량 hero 보조)
+     사용처: Streak Hero (Overview), Compare 정량 hero 보조. 일반 헤딩에 사용 금지. */
+  --text-display-md: 40px;
+  --text-display-md--line-height: 1.05;
+  --text-display-md--letter-spacing: -1.5px;
+  --text-display-md--font-weight: 700;
+
   --radius-sm: 8px;
   --radius-md: 12px;
   --radius-lg: 18px;
@@ -105,6 +112,12 @@
 html, body {
   background: var(--color-bg);
   color: var(--color-fg);
+}
+
+/* Compare 페이지 bottom sheet 진입 모션 */
+@keyframes compareSheetIn {
+  from { transform: translateY(100%); }
+  to   { transform: translateY(0); }
 }
 
 body {

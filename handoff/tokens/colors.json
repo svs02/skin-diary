@@ -65,7 +65,8 @@
     "typography": {
       "font-display": { "$value": "'DM Sans', sans-serif", "$type": "fontFamily", "$description": "숫자, 대형 날짜 강조" },
       "font-body":    { "$value": "'Noto Sans KR', sans-serif", "$type": "fontFamily", "$description": "일반 UI 텍스트" },
-      "size-hero":    { "$value": "58px", "$type": "fontSize", "$description": "홈 날짜 대형 숫자" },
+      "size-hero":       { "$value": "58px", "$type": "fontSize", "$description": "홈 날짜 대형 숫자" },
+      "size-display-md": { "$value": "40px", "$type": "fontSize", "$description": "Streak Hero (Overview), Compare 정량 hero 보조 — 일반 헤딩 금지" },
       "size-title":   { "$value": "20px", "$type": "fontSize" },
       "size-section": { "$value": "16px", "$type": "fontSize" },
       "size-body":    { "$value": "14px", "$type": "fontSize" },

@@ -1,8 +1,8 @@
+// Legacy redirect — remove after 2026-06-05 (4 weeks deprecation window).
 import { redirect } from 'next/navigation';
-import { todayKey } from '@/lib/utils/dateKey';
 
-// /today는 BottomTabBar의 진입점. 실제 화면은 /record/[date]가 담당하며,
-// 여기서는 앱 타임존(America/Vancouver) 기준 오늘 dateKey로 위임한다 (CLAUDE.md §5.2, §5.5).
+// /today는 BottomTabBar 1번 슬롯이 /overview로 이동하면서 폐기됨.
+// 외부 북마크/공유 링크 호환을 위해 한시적으로 /overview로 위임한다 (CLAUDE.md §5.2).
 export default function TodayPage() {
-  redirect(`/record/${todayKey()}`);
+  redirect('/overview');
 }

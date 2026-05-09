@@ -11,6 +11,7 @@ export function PhotoSlot({
   state,
   imageUrl,
   errorMessage,
+  showRetry = true,
   onPick,
   onRetry,
 }: {
@@ -18,6 +19,7 @@ export function PhotoSlot({
   state: SlotState;
   imageUrl?: string;
   errorMessage?: string;
+  showRetry?: boolean;
   onPick: (file: File) => void;
   onRetry?: () => void;
 }) {
@@ -97,7 +99,7 @@ export function PhotoSlot({
             <span className="text-[11px] text-[color:var(--color-danger,#ef4444)]">
               {errorMessage}
             </span>
-            {onRetry && (
+            {onRetry && showRetry && (
               <button
                 type="button"
                 onClick={(e) => {

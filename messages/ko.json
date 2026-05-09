@@ -9,6 +9,7 @@
   },
   "tabs": {
     "today": "오늘",
+    "overview": "홈",
     "calendar": "달력",
     "compare": "비교",
     "settings": "설정"
@@ -69,7 +70,9 @@
       "error": {
         "tooLarge": "파일이 너무 커요",
         "unsupported": "지원하지 않는 형식이에요",
-        "upload": "업로드 실패. 다시 시도하세요."
+        "upload": "업로드 실패. 다시 시도하세요.",
+        "load": "이미지를 불러오지 못했어요",
+        "missing": "사진이 없어요. 다시 촬영해 주세요"
       }
     }
   },
@@ -94,6 +97,13 @@
       "title": "언어",
       "description": "원하는 언어를 선택하세요."
     },
+    "theme": {
+      "title": "테마",
+      "description": "밝은 화면, 어두운 화면, 시스템 설정 중에서 골라요.",
+      "light": "라이트",
+      "dark": "다크",
+      "system": "시스템"
+    },
     "account": {
       "title": "계정",
       "signOut": "로그아웃"
@@ -105,5 +115,105 @@
   },
   "placeholder": {
     "comingSoon": "준비 중인 페이지예요."
+  },
+  "overview": {
+    "greeting": {
+      "morning": "좋은 아침이에요",
+      "day": "안녕하세요",
+      "evening": "오늘 하루 어땠나요",
+      "night": "편안한 밤 되세요"
+    },
+    "streak": {
+      "unitDays": "{n, plural, other {#일}}",
+      "loadedCaption": "연속 기록 중",
+      "emptyCaption": "첫 기록을 기다리는 중"
+    },
+    "dot21": {
+      "title": "최근 21일"
+    },
+    "today": {
+      "labelOverline": "오늘",
+      "bodyEmptyFirstTime": "오늘부터 시작해 볼까요?",
+      "bodyEmpty": "아직 안 찍었어요",
+      "bodyPartial": "이어서 기록할까요?",
+      "bodyDone": "오늘 기록 완료",
+      "ctaPrimary": "오늘 기록하기",
+      "ctaSecondary": "오늘 기록 보기",
+      "ctaSubtitle": "사진 없이 저장해도 돼요"
+    },
+    "recent": {
+      "title": "최근 사진",
+      "viewAll": "전체보기"
+    },
+    "compare": {
+      "title": "{n}일 전과 비교",
+      "cta": "변화 보러 가기"
+    },
+    "stats": {
+      "monthly": "이번 달 {n}일 기록 · 가장 자주 {habit}"
+    },
+    "tip": {
+      "title": "이렇게 쓰면 좋아요",
+      "item1": "매일 비슷한 빛에서 찍기",
+      "item2": "메모는 한 줄이면 충분해요",
+      "item3": "30일 후엔 비교 화면이 열려요",
+      "dismiss": "확인했어요"
+    }
+  },
+  "compare": {
+    "title": "비교",
+    "back": "뒤로",
+    "labels": {
+      "sideA": "A",
+      "sideB": "B"
+    },
+    "angles": {
+      "front": "정면",
+      "left": "좌측",
+      "right": "우측"
+    },
+    "empty": {
+      "noPhoto": "비교할 사진이 아직 없어요",
+      "noPhotoHint": "캘린더에서 사진이 있는 날을 골라주세요",
+      "calendarCta": "달력 열기",
+      "sameDate": "다른 날짜를 골라주세요",
+      "unauthenticated": "로그인이 필요해요"
+    },
+    "sheet": {
+      "angleTitle": "각도 선택",
+      "dateTitleA": "왼쪽 날짜",
+      "dateTitleB": "오른쪽 날짜",
+      "apply": "적용",
+      "close": "닫기",
+      "cancel": "취소"
+    },
+    "angleDisabled": "이 각도는 한쪽에 사진이 없어요",
+    "missingPhoto": "{side}에 사진이 없어요",
+    "meta": {
+      "toggleOpen": "그날 메모 보기",
+      "toggleClose": "메모 접기",
+      "water": "물",
+      "waterUnit": "{n}잔",
+      "food": "음식",
+      "cosmetic": "화장품",
+      "exercise": "운동",
+      "exerciseYes": "함",
+      "exerciseNo": "안 함",
+      "memo": "메모",
+      "noRecord": "기록 없음",
+      "emptyValue": "—"
+    },
+    "handle": {
+      "aria": "비교 분할선, 좌우로 끌어 비율 조절"
+    },
+    "image": {
+      "alt": "{date} {angle} 사진"
+    },
+    "live": {
+      "ratio": "A {a}% · B {b}%"
+    },
+    "error": {
+      "future": "미래 날짜는 비교할 수 없어요"
+    }
   }
 }

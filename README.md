@@ -4,7 +4,7 @@
 
 ## License
 
-© 2026 DkrabbitLuke. All rights reserved.
+© 2026 Taehyeok Lee. All rights reserved.
 
 본 저장소의 코드와 자산은 별도 라이선스가 부여되지 않은 사적 자산입니다 (`UNLICENSED`).
 복제, 수정, 재배포, 상업적 이용 등 일체의 권리가 저작권자에게 유보됩니다.

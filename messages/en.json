@@ -9,6 +9,7 @@
   },
   "tabs": {
     "today": "Today",
+    "overview": "Overview",
     "calendar": "Calendar",
     "compare": "Compare",
     "settings": "Settings"
@@ -69,7 +70,9 @@
       "error": {
         "tooLarge": "File too large",
         "unsupported": "Unsupported format",
-        "upload": "Upload failed. Try again."
+        "upload": "Upload failed. Try again.",
+        "load": "Couldn't load image",
+        "missing": "Photo missing — retake?"
       }
     }
   },
@@ -94,6 +97,13 @@
       "title": "Language",
       "description": "Choose your preferred language."
     },
+    "theme": {
+      "title": "Theme",
+      "description": "Pick light, dark, or follow your system.",
+      "light": "Light",
+      "dark": "Dark",
+      "system": "System"
+    },
     "account": {
       "title": "Account",
       "signOut": "Sign out"
@@ -105,5 +115,105 @@
   },
   "placeholder": {
     "comingSoon": "This page is coming soon."
+  },
+  "overview": {
+    "greeting": {
+      "morning": "Good morning",
+      "day": "Hello",
+      "evening": "How was your day?",
+      "night": "Have a peaceful night"
+    },
+    "streak": {
+      "unitDays": "{n, plural, =0 {Just getting started} one {# day} other {# days}}",
+      "loadedCaption": "on a streak",
+      "emptyCaption": "Waiting for your first entry"
+    },
+    "dot21": {
+      "title": "Last 21 days"
+    },
+    "today": {
+      "labelOverline": "TODAY",
+      "bodyEmptyFirstTime": "Want to start today?",
+      "bodyEmpty": "Not captured yet",
+      "bodyPartial": "Pick up where you left off?",
+      "bodyDone": "Today's entry complete",
+      "ctaPrimary": "Record today",
+      "ctaSecondary": "View today's entry",
+      "ctaSubtitle": "You can save without photos"
+    },
+    "recent": {
+      "title": "Recent photos",
+      "viewAll": "View all"
+    },
+    "compare": {
+      "title": "Compare with {n, plural, one {# day} other {# days}} ago",
+      "cta": "See the change"
+    },
+    "stats": {
+      "monthly": "{n} days this month · most often {habit}"
+    },
+    "tip": {
+      "title": "Tips",
+      "item1": "Capture in similar light each day",
+      "item2": "A one-line note is enough",
+      "item3": "Compare unlocks after 30 days",
+      "dismiss": "Got it"
+    }
+  },
+  "compare": {
+    "title": "Compare",
+    "back": "Back",
+    "labels": {
+      "sideA": "A",
+      "sideB": "B"
+    },
+    "angles": {
+      "front": "Front",
+      "left": "Left",
+      "right": "Right"
+    },
+    "empty": {
+      "noPhoto": "No photos to compare yet",
+      "noPhotoHint": "Pick a day with photos from the calendar",
+      "calendarCta": "Open calendar",
+      "sameDate": "Pick a different date",
+      "unauthenticated": "Sign in required"
+    },
+    "sheet": {
+      "angleTitle": "Choose angle",
+      "dateTitleA": "Left date",
+      "dateTitleB": "Right date",
+      "apply": "Apply",
+      "close": "Close",
+      "cancel": "Cancel"
+    },
+    "angleDisabled": "No photo on one side",
+    "missingPhoto": "No photo on {side}",
+    "meta": {
+      "toggleOpen": "Show that day's notes",
+      "toggleClose": "Hide notes",
+      "water": "Water",
+      "waterUnit": "{n} cups",
+      "food": "Food",
+      "cosmetic": "Cosmetic",
+      "exercise": "Exercise",
+      "exerciseYes": "Yes",
+      "exerciseNo": "No",
+      "memo": "Memo",
+      "noRecord": "No record",
+      "emptyValue": "—"
+    },
+    "handle": {
+      "aria": "Comparison divider, drag horizontally to adjust"
+    },
+    "image": {
+      "alt": "{angle} photo on {date}"
+    },
+    "live": {
+      "ratio": "A {a}% · B {b}%"
+    },
+    "error": {
+      "future": "Future dates can't be compared"
+    }
   }
 }

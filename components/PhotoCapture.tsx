@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useTranslations } from 'next-intl';
+import { FirebaseError } from 'firebase/app';
 import { normalizeToSquareJpeg } from '@/lib/image/normalize';
 import {
   PhotoUploadError,
@@ -14,7 +15,7 @@ import { PhotoSlot, type SlotState } from './PhotoSlot';
 
 const ANGLES: Angle[] = ['front', 'left', 'right'];
 
-type ErrorKey = 'tooLarge' | 'unsupported' | 'upload';
+type ErrorKey = 'tooLarge' | 'unsupported' | 'upload' | 'load' | 'missing';
 type Transient = { state: 'uploading' } | { state: 'error'; errorKey: ErrorKey };
 
 /**
@@ -38,12 +39,16 @@ export function PhotoCapture({
   const lastFileRef = useRef<Partial<Record<Angle, File>>>({});
   // 진행 중인 URL 요청을 추적. 결과가 cancel/실패해도 항상 해제해서 다음 effect run에서 재시도 가능하게 한다.
   const inflightRef = useRef<Set<Angle>>(new Set());
+  // imageUrls는 동기 스킵 체크용으로만 필요 — ref로 항상 최신 값을 읽되 effect 재실행은 트리거하지 않는다.
+  // (deps에 imageUrls를 넣으면 첫 URL 도착 시 effect cleanup이 in-flight 다른 angle의 closure를 cancel시켜 영구 'uploading'에 갇힘.)
+  const imageUrlsRef = useRef<Partial<Record<Angle, string>>>({});
+  imageUrlsRef.current = imageUrls;
 
   useEffect(() => {
     let cancelled = false;
     for (const angle of ANGLES) {
       if (!photos[angle]) continue;
-      if (imageUrls[angle]) continue; // 이미 URL 보유
+      if (imageUrlsRef.current[angle]) continue; // 이미 URL 보유
       if (inflightRef.current.has(angle)) continue;
       inflightRef.current.add(angle);
       getAngleDownloadURL(uid, dateKey, angle)
@@ -52,14 +57,30 @@ export function PhotoCapture({
           if (cancelled) return;
           setImageUrls((p) => ({ ...p, [angle]: url }));
         })
-        .catch(() => {
+        .catch((err: unknown) => {
           inflightRef.current.delete(angle);
+          console.error('[PhotoCapture] URL fetch failed', { angle, dateKey, err });
+          if (cancelled) return;
+          const code =
+            err instanceof FirebaseError
+              ? err.code
+              : (err as { code?: string } | null)?.code;
+          const message =
+            err instanceof Error ? err.message : typeof err === 'string' ? err : '';
+          const isMissing =
+            code === 'storage/object-not-found' ||
+            message.includes('object-not-found');
+          const errorKey: ErrorKey = isMissing ? 'missing' : 'load';
+          setTransient((p) => ({
+            ...p,
+            [angle]: { state: 'error', errorKey },
+          }));
         });
     }
     return () => {
       cancelled = true;
     };
-  }, [uid, dateKey, photos, imageUrls]);
+  }, [uid, dateKey, photos]);
 
   const runUpload = useCallback(
     async (angle: Angle, file: File) => {
@@ -126,6 +147,7 @@ export function PhotoCapture({
               state={slot.state}
               imageUrl={slot.imageUrl}
               errorMessage={slot.errorKey ? tErr(slot.errorKey) : undefined}
+              showRetry={slot.errorKey != null && slot.errorKey !== 'missing'}
               onPick={(file) => runUpload(angle, file)}
               onRetry={
                 slot.errorKey

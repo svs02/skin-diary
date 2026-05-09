@@ -34,3 +34,34 @@ export function isFuture(dateKey: string, now: Date = new Date()): boolean {
   if (!isValidDateKey(dateKey)) return false;
   return dateKey > todayKey(now);
 }
+
+/**
+ * dateKey(YYYY-MM-DD)에서 days 만큼 더한 dateKey 반환.
+ * UTC 산술 사용 — 문자열 비교가 사전순=시간순이라 타임존 영향 없음 (저장된 키는 이미 앱 TZ 기준).
+ */
+export function addDaysKey(dateKey: string, days: number): string {
+  if (!isValidDateKey(dateKey)) {
+    throw new Error(`Invalid dateKey: ${dateKey}`);
+  }
+  const [y, m, d] = dateKey.split('-').map(Number);
+  const utc = new Date(Date.UTC(y, m - 1, d));
+  utc.setUTCDate(utc.getUTCDate() + days);
+  const yy = utc.getUTCFullYear();
+  const mm = String(utc.getUTCMonth() + 1).padStart(2, '0');
+  const dd = String(utc.getUTCDate()).padStart(2, '0');
+  return `${yy}-${mm}-${dd}`;
+}
+
+/**
+ * 두 dateKey 사이의 일수 차이 (b - a). UTC 기준이라 DST 영향 없음.
+ */
+export function daysBetweenKeys(a: string, b: string): number {
+  if (!isValidDateKey(a) || !isValidDateKey(b)) {
+    throw new Error(`Invalid dateKey(s): ${a}, ${b}`);
+  }
+  const [ay, am, ad] = a.split('-').map(Number);
+  const [by, bm, bd] = b.split('-').map(Number);
+  const aUtc = Date.UTC(ay, am - 1, ad);
+  const bUtc = Date.UTC(by, bm - 1, bd);
+  return Math.round((bUtc - aUtc) / (24 * 60 * 60 * 1000));
+}

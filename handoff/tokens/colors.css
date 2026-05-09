@@ -53,6 +53,12 @@
   --font-body:    'Noto Sans KR', sans-serif;
 
   --text-hero:    58px;
+  /* Typography — display tier (정량 hero 보조)
+     사용처: Streak Hero (Overview), Compare 정량 hero 보조. 일반 헤딩에 사용 금지. */
+  --text-display-md:     40px;
+  --leading-display-md:  1.05;
+  --tracking-display-md: -1.5px;
+  --weight-display-md:   700;
   --text-title:   20px;
   --text-section: 16px;
   --text-body:    14px;

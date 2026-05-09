@@ -23,24 +23,52 @@ function recordsCol(uid: string) {
 }
 
 /**
- * 한 달 범위 내 기록이 있는 dateKey 집합. 캘린더의 점 표시에 사용.
+ * 범위 쿼리 결과 한 항목. dateKey + photos 메타.
+ * Overview 21-dot strip / Streak 계산 / Compare 페어링이 단일 메타 쿼리로 동작하도록
+ * photos 플래그까지 함께 반환한다 (CLAUDE.md §1.2 — front/left/right 3각도 고정).
+ */
+export type RecordRangeItem = {
+  date: string; // yyyy-mm-dd
+  photos: {
+    front: boolean;
+    left: boolean;
+    right: boolean;
+  };
+};
+
+/**
+ * 지정 범위 내 기록이 있는 항목들을 dateKey 오름차순으로 반환.
+ *  - documentId() 범위 쿼리 유지 (CLAUDE.md §4.2 경로 그대로).
+ *  - photos 메타가 필요하므로 ID-only projection이 아니라 doc body를 읽는다.
+ *    60일 윈도우 기준 최대 60건이라 비용 영향은 무시 수준.
+ *  - photos 누락 데이터(과거 raw)는 false로 호환.
  * @param uid 사용자 uid
- * @param monthStartKey 'YYYY-MM-01' 형식의 해당 달 첫째 날
- * @param monthEndKeyExclusive 다음 달 'YYYY-MM-01' (배타적 상한)
+ * @param startKey 'YYYY-MM-DD' 시작일 (포함)
+ * @param endKeyExclusive 'YYYY-MM-DD' 종료일 (배타적)
  */
 export async function listRecordKeysInRange(
   uid: string,
-  monthStartKey: string,
-  monthEndKeyExclusive: string,
-): Promise<Set<string>> {
+  startKey: string,
+  endKeyExclusive: string,
+): Promise<RecordRangeItem[]> {
   const q = query(
     recordsCol(uid),
-    where(documentId(), '>=', monthStartKey),
-    where(documentId(), '<', monthEndKeyExclusive),
+    where(documentId(), '>=', startKey),
+    where(documentId(), '<', endKeyExclusive),
     orderBy(documentId()),
   );
   const snap = await getDocs(q);
-  return new Set(snap.docs.map((d) => d.id));
+  return snap.docs.map((d) => {
+    const data = d.data();
+    return {
+      date: d.id,
+      photos: {
+        front: data?.photos?.front ?? false,
+        left: data?.photos?.left ?? false,
+        right: data?.photos?.right ?? false,
+      },
+    };
+  });
 }
 
 export async function getDailyRecord(

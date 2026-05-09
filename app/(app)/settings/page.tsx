@@ -5,6 +5,7 @@ import { signOut } from 'firebase/auth';
 import { useRouter } from 'next/navigation';
 import { auth } from '@/lib/firebase/client';
 import { LocaleToggle } from '@/components/LocaleToggle';
+import { ThemeToggle } from '@/components/ThemeToggle';
 
 export default function SettingsPage() {
   const t = useTranslations('settings');
@@ -28,6 +29,18 @@ export default function SettingsPage() {
             </p>
           </div>
           <LocaleToggle />
+        </div>
+      </section>
+
+      <section className="rounded-[18px] bg-surface p-5 shadow-sm">
+        <div className="flex items-start justify-between gap-4">
+          <div>
+            <h2 className="text-[14px] font-semibold">{t('theme.title')}</h2>
+            <p className="mt-1 text-[12px] text-fg-muted">
+              {t('theme.description')}
+            </p>
+          </div>
+          <ThemeToggle />
         </div>
       </section>
 

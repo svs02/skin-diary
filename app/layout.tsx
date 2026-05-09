@@ -23,6 +23,10 @@ export const metadata: Metadata = {
   description: 'Track your skin, one day at a time.',
 };
 
+// Runs before React hydration to set <html data-theme> from localStorage,
+// preventing a flash of the wrong theme. Kept tiny and self-contained.
+const themeBootScript = `(function(){try{var k='skin-diary:theme';var v=localStorage.getItem(k);if(v==='light'||v==='dark'){document.documentElement.setAttribute('data-theme',v);}else{document.documentElement.removeAttribute('data-theme');}}catch(e){}})();`;
+
 export default async function RootLayout({
   children,
 }: Readonly<{
@@ -35,7 +39,11 @@ export default async function RootLayout({
     <html
       lang={locale}
       className={`${dmSans.variable} ${notoSansKr.variable} h-full antialiased`}
+      suppressHydrationWarning
     >
+      <head>
+        <script dangerouslySetInnerHTML={{ __html: themeBootScript }} />
+      </head>
       <body className="min-h-full flex flex-col bg-bg text-fg">
         <NextIntlClientProvider locale={locale} messages={messages}>
           <AuthProvider>

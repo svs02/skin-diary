@@ -77,8 +77,8 @@ export default function CalendarPage() {
     const nextMonth = month1 === 12 ? 1 : month1 + 1;
     const nextYear = month1 === 12 ? year + 1 : year;
     const endExclusive = `${nextYear}-${pad(nextMonth)}-01`;
-    listRecordKeysInRange(user.uid, start, endExclusive).then((keys) => {
-      if (!cancelled) setRecordKeys(keys);
+    listRecordKeysInRange(user.uid, start, endExclusive).then((items) => {
+      if (!cancelled) setRecordKeys(new Set(items.map((i) => i.date)));
     });
     return () => {
       cancelled = true;
