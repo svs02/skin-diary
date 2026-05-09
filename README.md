@@ -1,3 +1,16 @@
+# Skin Diary
+
+피부 변화를 매일 기록하고 비교하는 개인 다이어리. Next.js + Firebase 기반.
+
+## License
+
+© 2026 DkrabbitLuke. All rights reserved.
+
+본 저장소의 코드와 자산은 별도 라이선스가 부여되지 않은 사적 자산입니다 (`UNLICENSED`).
+복제, 수정, 재배포, 상업적 이용 등 일체의 권리가 저작권자에게 유보됩니다.
+
+---
+
 This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
 
 ## Getting Started
