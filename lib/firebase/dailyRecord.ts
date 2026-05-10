@@ -142,6 +142,28 @@ export async function markPhotoUploaded(
 }
 
 /**
+ * 사진 삭제 후 photos.{angle} 플래그를 false로 갱신.
+ *  - 문서 존재: updateDoc + 닷 표기로 부분 갱신 (createdAt 미터치)
+ *  - 문서 미존재: noop. 빈 record를 새로 만들면 캘린더 dot에 잡혀 일관성 위반.
+ * markPhotoUploaded와 대칭이지만, 미존재 분기는 의도적으로 setDoc하지 않는다.
+ */
+export async function markPhotoDeleted(
+  uid: string,
+  dateKey: string,
+  angle: Angle,
+): Promise<void> {
+  const ref = recordRef(uid, dateKey);
+  const snap = await getDoc(ref);
+
+  if (!snap.exists()) return;
+
+  await updateDoc(ref, {
+    [`photos.${angle}`]: false,
+    updatedAt: serverTimestamp(),
+  });
+}
+
+/**
  * 라이프스타일 폼 저장. createdAt 보존(merge:true에 createdAt까지 명시하면 매번 갱신되는 버그를
  * 피하기 위해 markPhotoUploaded와 동일하게 존재/미존재 분기).
  *  - 문서 존재: updateDoc — createdAt 미터치, lifestyleSavedAt/updatedAt만 갱신

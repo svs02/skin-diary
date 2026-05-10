@@ -74,7 +74,82 @@
         "upload": "업로드 실패. 다시 시도하세요.",
         "load": "이미지를 불러오지 못했어요",
         "missing": "사진이 없어요. 다시 촬영해 주세요"
+      },
+      "emptySlot": "+ {angle} 촬영",
+      "sheet": {
+        "title": "사진을 추가해요",
+        "subtitle": "정면·좌·우, 한 장씩 천천히",
+        "cta": {
+          "camera": "카메라로 찍기",
+          "gallery": "갤러리에서 고르기",
+          "cameraUnavailable": "카메라가 없어요. 갤러리에서 골라주세요"
+        },
+        "cancel": "닫기",
+        "angle": {
+          "helper": "어떤 각도부터 시작할까요?"
+        }
+      },
+      "menu": {
+        "openAria": "사진 메뉴 열기",
+        "retake": "다시 촬영",
+        "replace": "갤러리에서 교체",
+        "delete": "삭제",
+        "deletedToast": "삭제했어요",
+        "undo": "되돌리기",
+        "cancel": "닫기"
+      },
+      "toast": {
+        "uploading": "올리는 중...",
+        "uploaded": "저장됐어요",
+        "failed": "잠깐 멈췄어요. 다시 시도할게요",
+        "retry": "다시 시도"
       }
+    },
+    "calendar": {
+      "future": {
+        "disabled": "기록할 수 없는 미래 날짜",
+        "toast": "오늘 이후 날짜는 미리 기록할 수 없어요."
+      }
+    },
+    "capture": {
+      "permission": {
+        "prompt": {
+          "title": "카메라를 잠깐 쓸게요",
+          "body": "사진을 정사각으로 정리해서 저장해요"
+        },
+        "allow": "허용",
+        "gallery": "갤러리에서 고르기",
+        "deniedOnce": {
+          "title": "다시 한 번 허용해 주세요",
+          "body": "카메라 없이도 갤러리에서 고를 수 있어요"
+        },
+        "deniedPermanent": {
+          "title": "브라우저 설정에서 권한을 켜주세요",
+          "body": "주소창 좌측 자물쇠 → 카메라 → 허용"
+        }
+      },
+      "angle": {
+        "front": "정면",
+        "left": "좌측",
+        "right": "우측"
+      },
+      "shutter": "촬영",
+      "preview": {
+        "use": "사용",
+        "retake": "다시 찍기"
+      },
+      "error": {
+        "notFound": {
+          "title": "카메라가 없어요",
+          "body": "갤러리에서 사진을 골라주세요"
+        },
+        "notReadable": {
+          "title": "카메라가 사용 중이에요",
+          "body": "다른 앱이 카메라를 쓰는지 확인해 주세요"
+        }
+      },
+      "retry": "다시 시도",
+      "close": "닫기"
     }
   },
   "calendar": {
@@ -136,13 +211,13 @@
       "title": "이번 주",
       "fraction": "{done}/7",
       "weekdaysShort": [
+        "일",
         "월",
         "화",
         "수",
         "목",
         "금",
-        "토",
-        "일"
+        "토"
       ]
     },
     "today": {
@@ -361,7 +436,7 @@
         },
         {
           "title": "9. 문의처",
-          "body": "개인정보 관련 문의는 [메이커 이메일]로 연락 주세요. Skin Diary는 1인 메이커가 운영하는 베타 서비스로, 응답에 며칠이 걸릴 수 있어요."
+          "body": "개인정보 관련 문의는 svs02po@gmail.com으로 연락 주세요. Skin Diary는 1인 메이커가 운영하는 베타 서비스로, 응답에 며칠이 걸릴 수 있어요."
         }
       ]
     },
@@ -412,7 +487,7 @@
         },
         {
           "title": "9. 문의처",
-          "body": "약관 관련 문의는 [메이커 이메일]로 연락 주세요."
+          "body": "약관 관련 문의는 svs02po@gmail.com으로 연락 주세요."
         }
       ]
     }

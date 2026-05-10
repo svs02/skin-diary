@@ -1,0 +1,1219 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>PhotoCapture Flow — Visual Showcase</title>
+<link rel="stylesheet" href="./tokens.css" />
+<style>
+  /* ─────────────────────────────────────────
+     Showcase chrome — uses tokens from tokens.css
+     No external fonts, no external libs. All inline.
+  ───────────────────────────────────────── */
+  *, *::before, *::after { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; }
+  body {
+    font-family: var(--font-body);
+    background: var(--color-bg);
+    color: var(--color-fg);
+    font-size: var(--text-body);
+    line-height: var(--text-body-line-height);
+    -webkit-font-smoothing: antialiased;
+  }
+  a { color: var(--color-accent); text-decoration: none; }
+  a:hover { text-decoration: underline; }
+  code { font-family: ui-monospace, "SF Mono", Menlo, monospace; font-size: 12px; background: var(--color-surface-2); padding: 2px 6px; border-radius: 4px; }
+
+  /* Layout */
+  .layout { display: flex; min-height: 100vh; }
+  nav.index {
+    position: sticky; top: 0; align-self: flex-start;
+    width: 240px; height: 100vh; overflow-y: auto;
+    padding: var(--spacing-6) var(--spacing-4);
+    border-right: 1px solid var(--color-border);
+    background: var(--color-surface);
+  }
+  nav.index h1 {
+    font-family: var(--font-display);
+    font-size: var(--text-title);
+    font-weight: var(--text-title-font-weight);
+    letter-spacing: var(--text-title-letter-spacing);
+    margin: 0 0 var(--spacing-2) 0;
+  }
+  nav.index .sub { font-size: var(--text-caption); color: var(--color-fg-muted); margin-bottom: var(--spacing-6); }
+  nav.index ol { list-style: none; padding: 0; margin: 0; counter-reset: artboard; }
+  nav.index li { counter-increment: artboard; margin-bottom: var(--spacing-2); }
+  nav.index li a {
+    display: flex; align-items: baseline; gap: var(--spacing-2);
+    padding: var(--spacing-2) var(--spacing-3);
+    border-radius: var(--radius-sm);
+    color: var(--color-fg);
+    font-size: var(--text-caption);
+    line-height: 1.4;
+  }
+  nav.index li a::before {
+    content: counter(artboard, decimal-leading-zero);
+    color: var(--color-fg-subtle);
+    font-variant-numeric: tabular-nums;
+    font-size: 11px;
+  }
+  nav.index li a:hover { background: var(--color-surface-2); text-decoration: none; }
+  nav.index .group-label {
+    font-size: 11px; text-transform: uppercase; letter-spacing: 0.06em;
+    color: var(--color-fg-subtle); margin: var(--spacing-5) 0 var(--spacing-2);
+    padding: 0 var(--spacing-3);
+  }
+
+  main.canvas { flex: 1; padding: var(--spacing-8) var(--spacing-8); max-width: 1024px; }
+  main.canvas > header.intro {
+    padding-bottom: var(--spacing-8);
+    border-bottom: 1px solid var(--color-border);
+    margin-bottom: var(--spacing-8);
+  }
+  main.canvas > header.intro h2 {
+    font-family: var(--font-display);
+    font-size: var(--text-display);
+    font-weight: var(--text-display-font-weight);
+    letter-spacing: var(--text-display-letter-spacing);
+    line-height: var(--text-display-line-height);
+    margin: 0 0 var(--spacing-3);
+  }
+  main.canvas > header.intro p { color: var(--color-fg-muted); margin: 0; max-width: 60ch; }
+
+  section.artboard {
+    margin-bottom: var(--spacing-12);
+    scroll-margin-top: var(--spacing-6);
+  }
+  section.artboard > header {
+    display: flex; align-items: baseline; gap: var(--spacing-3);
+    margin-bottom: var(--spacing-4);
+  }
+  section.artboard > header .num {
+    font-variant-numeric: tabular-nums;
+    color: var(--color-fg-subtle);
+    font-size: 13px;
+  }
+  section.artboard > header h3 {
+    font-family: var(--font-display);
+    font-size: var(--text-title);
+    font-weight: var(--text-title-font-weight);
+    letter-spacing: var(--text-title-letter-spacing);
+    margin: 0;
+  }
+  section.artboard > header .badge {
+    font-size: 11px;
+    padding: 2px 8px;
+    border-radius: var(--radius-full);
+    background: var(--color-accent-dim);
+    color: var(--color-accent-text);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+  }
+  section.artboard p.caption {
+    color: var(--color-fg-muted);
+    margin: 0 0 var(--spacing-5);
+    max-width: 60ch;
+  }
+  section.artboard .footnote {
+    margin-top: var(--spacing-4);
+    padding-top: var(--spacing-3);
+    border-top: 1px dashed var(--color-border);
+    font-size: var(--text-caption);
+    color: var(--color-fg-muted);
+  }
+
+  /* Stage — neutral surface that holds device frames */
+  .stage {
+    background: var(--color-surface-2);
+    padding: var(--spacing-8);
+    border-radius: var(--radius-lg);
+    display: flex; gap: var(--spacing-6); flex-wrap: wrap; justify-content: center;
+  }
+
+  /* ─────── Mobile device frame ─────── */
+  .device-mobile {
+    width: 375px;
+    background: var(--color-bg);
+    border-radius: 36px;
+    box-shadow: var(--shadow-raised);
+    padding: 8px;
+    overflow: hidden;
+  }
+  .device-mobile .screen {
+    background: var(--color-bg);
+    border-radius: 28px;
+    overflow: hidden;
+    position: relative;
+    min-height: 520px;
+  }
+
+  /* ─────── Desktop device frame ─────── */
+  .device-desktop {
+    width: 720px;
+    background: var(--color-bg);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-raised);
+    padding: 12px;
+  }
+  .device-desktop .screen {
+    background: var(--color-surface);
+    border-radius: var(--radius-md);
+    min-height: 460px;
+    position: relative;
+    overflow: hidden;
+  }
+
+  /* ─────── Sheet (mobile bottom) ─────── */
+  .sheet {
+    position: absolute;
+    left: 0; right: 0; bottom: 0;
+    background: var(--color-surface);
+    border-top-left-radius: var(--radius-lg);
+    border-top-right-radius: var(--radius-lg);
+    box-shadow: var(--shadow-lg);
+    padding: var(--spacing-3) var(--spacing-5) var(--spacing-6);
+  }
+  .sheet .handle {
+    width: 40px; height: 4px;
+    background: var(--color-fg-subtle);
+    border-radius: var(--radius-full);
+    margin: 0 auto var(--spacing-4);
+  }
+  .sheet h4 {
+    font-family: var(--font-display);
+    font-size: var(--text-title);
+    font-weight: var(--text-title-font-weight);
+    margin: 0 0 var(--spacing-2);
+  }
+  .sheet .sub {
+    color: var(--color-fg-muted);
+    margin: 0 0 var(--spacing-5);
+  }
+  .chips { display: flex; gap: var(--spacing-2); margin-bottom: var(--spacing-5); }
+  .chip {
+    padding: 8px 16px;
+    border-radius: var(--radius-full);
+    background: var(--color-accent-dim);
+    color: var(--color-accent-text);
+    font-size: var(--text-caption);
+    font-weight: 500;
+    border: none;
+  }
+  .chip.active { background: var(--color-accent); color: var(--color-surface); }
+  .cta-stack { display: flex; flex-direction: column; gap: var(--spacing-2); margin-bottom: var(--spacing-3); }
+  .cta {
+    display: flex; align-items: center; justify-content: center; gap: var(--spacing-2);
+    height: 52px;
+    border-radius: var(--radius-md);
+    border: none;
+    font-size: var(--text-body);
+    font-weight: 500;
+    cursor: pointer;
+  }
+  .cta.primary { background: var(--color-accent); color: var(--color-surface); }
+  .cta.secondary { background: var(--color-surface-2); color: var(--color-fg); }
+  .cta.tertiary { background: transparent; color: var(--color-accent); height: 40px; font-size: var(--text-caption); }
+  .helper { font-size: var(--text-caption); color: var(--color-fg-muted); text-align: center; margin: 0; }
+
+  /* ─────── Camera shell ─────── */
+  .camera {
+    position: relative;
+    width: 100%;
+    height: 100%;
+    min-height: 520px;
+    background: var(--color-camera-bg);
+    color: var(--color-surface);
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+  }
+  .camera .topbar {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: var(--spacing-4);
+    color: var(--color-surface);
+    font-size: var(--text-caption);
+  }
+  .camera .topbar .label { opacity: 0.85; }
+  .camera .topbar button {
+    background: rgba(0,0,0,0.32);
+    border: none; color: var(--color-surface);
+    width: 36px; height: 36px;
+    border-radius: var(--radius-full);
+    font-size: 14px;
+    cursor: pointer;
+  }
+  .camera .preview {
+    flex: 1;
+    display: flex; align-items: center; justify-content: center;
+    position: relative;
+  }
+  .camera .preview .frame {
+    width: 280px; height: 280px;
+    background: linear-gradient(135deg, #1a1a22 0%, #0f0f15 100%);
+    border-radius: var(--radius-md);
+    position: relative;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .dots {
+    display: flex; gap: var(--spacing-2);
+    justify-content: center;
+    padding: var(--spacing-4) 0;
+  }
+  .dot { width: 8px; height: 8px; border-radius: var(--radius-full); }
+  .dot.empty { background: transparent; border: 1px solid var(--color-fg-subtle); }
+  .dot.active { width: 10px; height: 10px; background: transparent; border: 2px solid var(--color-accent); }
+  .dot.filled { background: var(--color-accent-dim); }
+
+  .shutter-row {
+    display: flex; align-items: center; justify-content: center;
+    gap: var(--spacing-12);
+    padding: var(--spacing-5) var(--spacing-4) var(--spacing-8);
+    position: relative;
+  }
+  .siderail-btn {
+    width: 44px; height: 44px;
+    border-radius: var(--radius-full);
+    background: rgba(0,0,0,0.32);
+    color: var(--color-surface);
+    border: none;
+    font-size: 16px;
+    cursor: pointer;
+  }
+  .shutter {
+    width: 72px; height: 72px;
+    border-radius: var(--radius-full);
+    background: transparent;
+    border: 3px solid var(--color-surface);
+    padding: 4px;
+    cursor: pointer;
+  }
+  .shutter > span {
+    display: block;
+    width: 100%; height: 100%;
+    background: var(--color-surface);
+    border-radius: var(--radius-full);
+    box-shadow: var(--shadow-raised);
+  }
+
+  /* AngleGuide block */
+  .angle-grid { display: flex; gap: var(--spacing-6); justify-content: center; padding: var(--spacing-6); }
+  .angle-card {
+    background: var(--color-camera-bg);
+    color: var(--color-surface);
+    width: 200px;
+    padding: var(--spacing-5);
+    border-radius: var(--radius-md);
+    text-align: center;
+  }
+  .angle-card svg { width: 140px; height: 140px; }
+  .angle-card .name {
+    margin-top: var(--spacing-3);
+    font-size: var(--text-caption);
+    color: var(--color-fg-subtle);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+  }
+
+  /* Permission state cards */
+  .perm-card {
+    padding: var(--spacing-8) var(--spacing-5);
+    color: var(--color-surface);
+    text-align: center;
+    flex: 1;
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+  }
+  .perm-card h4 {
+    font-family: var(--font-display);
+    font-size: var(--text-title);
+    font-weight: var(--text-title-font-weight);
+    margin: 0 0 var(--spacing-3);
+  }
+  .perm-card p { color: rgba(255,255,255,0.72); margin: 0 0 var(--spacing-6); max-width: 280px; }
+  .perm-card .cta-stack { width: 100%; max-width: 280px; }
+  .perm-card ol { text-align: left; padding-left: var(--spacing-5); color: rgba(255,255,255,0.72); font-size: var(--text-caption); }
+  .perm-card ol li { margin-bottom: var(--spacing-2); }
+
+  /* Photo grid (3 slots) */
+  .photo-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: var(--spacing-3);
+    padding: var(--spacing-5);
+    background: var(--color-bg);
+  }
+  .slot {
+    aspect-ratio: 1 / 1;
+    border-radius: var(--radius-md);
+    position: relative;
+    display: flex; align-items: center; justify-content: center;
+    flex-direction: column;
+    color: var(--color-fg-muted);
+  }
+  .slot.empty {
+    border: 1px dashed var(--color-border-strong);
+    background: var(--color-surface);
+  }
+  .slot.empty .plus {
+    width: 24px; height: 24px;
+    color: var(--color-fg-muted);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 24px; line-height: 1;
+  }
+  .slot.empty .label {
+    font-size: var(--text-caption);
+    margin-top: var(--spacing-2);
+  }
+  .slot.filled {
+    background: linear-gradient(135deg, #d8c0a8 0%, #b89878 100%);
+    box-shadow: var(--shadow-raised);
+    overflow: hidden;
+  }
+  .slot.filled .more-btn {
+    position: absolute;
+    top: 8px; right: 8px;
+    width: 28px; height: 28px;
+    border-radius: var(--radius-full);
+    background: var(--color-surface);
+    color: var(--color-fg);
+    border: none;
+    box-shadow: var(--shadow-raised);
+    cursor: pointer;
+    font-size: 16px;
+    line-height: 1;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .slot.filled .label-badge {
+    position: absolute;
+    bottom: 8px; left: 8px;
+    background: var(--color-accent-dim);
+    color: var(--color-accent-text);
+    font-size: 11px;
+    padding: 2px 8px;
+    border-radius: var(--radius-full);
+  }
+
+  /* Action menu (sheet style) */
+  .action-menu {
+    position: absolute;
+    left: 0; right: 0; bottom: 0;
+    background: var(--color-surface);
+    border-top-left-radius: var(--radius-lg);
+    border-top-right-radius: var(--radius-lg);
+    box-shadow: var(--shadow-lg);
+    padding: var(--spacing-3) 0 var(--spacing-6);
+  }
+  .action-menu .handle {
+    width: 40px; height: 4px;
+    background: var(--color-fg-subtle);
+    border-radius: var(--radius-full);
+    margin: 0 auto var(--spacing-3);
+  }
+  .action-menu .item {
+    display: flex; align-items: center; gap: var(--spacing-3);
+    width: 100%;
+    padding: var(--spacing-4) var(--spacing-5);
+    background: transparent;
+    border: none;
+    color: var(--color-fg);
+    font-size: var(--text-body);
+    text-align: left;
+    cursor: pointer;
+  }
+  .action-menu .item:hover { background: var(--color-surface-2); }
+  .action-menu .divider {
+    height: 1px;
+    background: var(--color-border);
+    margin: var(--spacing-1) var(--spacing-5);
+  }
+
+  /* Calendar grid (future-disabled) */
+  .calendar {
+    padding: var(--spacing-5);
+    background: var(--color-surface);
+  }
+  .cal-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: var(--spacing-4); }
+  .cal-head h5 { margin: 0; font-size: var(--text-title); font-weight: var(--text-title-font-weight); font-family: var(--font-display); }
+  .cal-head .nav-btns { display: flex; gap: var(--spacing-2); }
+  .cal-head button { width: 32px; height: 32px; border-radius: var(--radius-full); background: var(--color-surface-2); border: none; cursor: pointer; }
+  .cal-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: var(--spacing-1); }
+  .cal-cell {
+    aspect-ratio: 1/1;
+    display: flex; align-items: center; justify-content: center;
+    font-size: var(--text-caption);
+    border-radius: var(--radius-sm);
+    color: var(--color-fg);
+  }
+  .cal-cell.today { background: var(--color-accent); color: var(--color-surface); font-weight: 600; }
+  .cal-cell.has-record::after {
+    content: ""; width: 4px; height: 4px; background: var(--color-accent);
+    border-radius: var(--radius-full);
+    position: absolute; transform: translateY(14px);
+  }
+  .cal-cell.future {
+    color: var(--color-fg-subtle);
+    opacity: 0.4;
+    pointer-events: none;
+  }
+  .cal-cell.head { color: var(--color-fg-subtle); font-size: 11px; text-transform: uppercase; }
+
+  /* Toasts */
+  .toasts { display: flex; flex-direction: column; gap: var(--spacing-3); padding: var(--spacing-5); }
+  .toast {
+    display: flex; align-items: center; gap: var(--spacing-3);
+    padding: var(--spacing-3) var(--spacing-4);
+    border-radius: var(--radius-md);
+    background: var(--color-surface);
+    box-shadow: var(--shadow-raised);
+    font-size: var(--text-body);
+    max-width: 340px;
+  }
+  .toast.success { background: var(--color-accent-dim); color: var(--color-accent-text); }
+  .toast .icon {
+    width: 20px; height: 20px;
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0;
+  }
+  .toast .icon.spinner {
+    border: 2px solid var(--color-border);
+    border-top-color: var(--color-accent);
+    border-radius: var(--radius-full);
+    animation: spin 0.9s linear infinite;
+  }
+  .toast .text { flex: 1; }
+  .toast .action-btn {
+    background: transparent;
+    border: none;
+    color: var(--color-accent);
+    font-weight: 500;
+    cursor: pointer;
+    font-size: var(--text-body);
+    padding: 0;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  /* Preview sheet */
+  .preview-sheet {
+    position: absolute;
+    left: 0; right: 0; bottom: 0;
+    background: var(--color-surface);
+    border-top-left-radius: var(--radius-lg);
+    border-top-right-radius: var(--radius-lg);
+    box-shadow: var(--shadow-lg);
+    padding: var(--spacing-3) var(--spacing-5) var(--spacing-6);
+  }
+  .preview-sheet .preview-img {
+    aspect-ratio: 1/1;
+    background: linear-gradient(135deg, #d8c0a8 0%, #b89878 100%);
+    border-radius: var(--radius-md);
+    margin: var(--spacing-3) 0 var(--spacing-5);
+  }
+  .preview-sheet .row { display: flex; gap: var(--spacing-2); }
+  .preview-sheet .row .cta { flex: 1; }
+
+  /* Backdrop overlay (visual hint) */
+  .backdrop {
+    position: absolute; inset: 0;
+    background: rgba(0,0,0,0.32);
+    pointer-events: none;
+  }
+
+  /* Token footnote chip */
+  .token-list {
+    display: flex; flex-wrap: wrap; gap: var(--spacing-1);
+    margin-top: var(--spacing-2);
+  }
+  .token-chip {
+    font-family: ui-monospace, "SF Mono", Menlo, monospace;
+    font-size: 11px;
+    background: var(--color-surface);
+    color: var(--color-fg-muted);
+    padding: 2px 8px;
+    border-radius: var(--radius-sm);
+    border: 1px solid var(--color-border);
+  }
+
+  /* Two-up split for permission states */
+  .split-2 { display: grid; grid-template-columns: 1fr 1fr; gap: var(--spacing-5); }
+  .split-2 .device-mobile { width: 100%; }
+</style>
+</head>
+<body>
+<div class="layout">
+
+  <nav class="index" aria-label="Artboard index">
+    <h1>PhotoCapture Flow</h1>
+    <div class="sub">Visual Showcase · v1.0</div>
+
+    <div class="group-label">AddPhotoSheet</div>
+    <ol>
+      <li><a href="#a01">Mobile sheet</a></li>
+      <li><a href="#a02">Desktop modal</a></li>
+    </ol>
+
+    <div class="group-label">CaptureShell</div>
+    <ol start="3">
+      <li><a href="#a03">Permission · prompt</a></li>
+      <li><a href="#a04">Permission · allowed</a></li>
+      <li><a href="#a05">Permission · denied-once</a></li>
+      <li><a href="#a06">Permission · denied-perm</a></li>
+      <li><a href="#a07">Capture preview</a></li>
+      <li><a href="#a08">AngleGuide 3-up</a></li>
+    </ol>
+
+    <div class="group-label">Photo Grid</div>
+    <ol start="9">
+      <li><a href="#a09">Empty slots</a></li>
+      <li><a href="#a10">Filled slots</a></li>
+      <li><a href="#a11">More menu open</a></li>
+    </ol>
+
+    <div class="group-label">Edge cases</div>
+    <ol start="12">
+      <li><a href="#a12">Future + Toasts</a></li>
+    </ol>
+  </nav>
+
+  <main class="canvas">
+    <header class="intro">
+      <h2>PhotoCapture Flow — Visual Showcase</h2>
+      <p>본 문서는 <code>handoff/PhotoCapture Flow - Spec.md</code>의 시각 보조 자료다. 12개 아트보드는 단일 HTML로, 외부 폰트·라이브러리 의존이 없다. 색·간격·반경·모션 토큰은 <code>./tokens.css</code> (handoff/tokens/colors.css 미러)에서 가져온다.</p>
+    </header>
+
+    <!-- ───────────── 01 AddPhotoSheet · Mobile ───────────── -->
+    <section class="artboard" id="a01">
+      <header>
+        <span class="num">01</span>
+        <h3>AddPhotoSheet — Mobile</h3>
+        <span class="badge">Sheet</span>
+      </header>
+      <p class="caption">375pt 모바일 진입 시트. handle bar + title + 각도 칩 3개 + CTA 2개(카메라 primary, 갤러리 secondary) + helper.</p>
+      <div class="stage">
+        <div class="device-mobile">
+          <div class="screen">
+            <div class="backdrop"></div>
+            <div class="sheet">
+              <div class="handle" aria-hidden="true"></div>
+              <h4>사진을 추가해요</h4>
+              <p class="sub">정면·좌·우, 한 장씩 천천히</p>
+              <div class="chips">
+                <button class="chip active">정면</button>
+                <button class="chip">좌</button>
+                <button class="chip">우</button>
+              </div>
+              <div class="cta-stack">
+                <button class="cta primary">카메라로 찍기</button>
+                <button class="cta secondary">갤러리에서 고르기</button>
+              </div>
+              <p class="helper">어떤 각도부터 시작할까요?</p>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="footnote">
+        <strong>Tokens used.</strong>
+        <div class="token-list">
+          <span class="token-chip">--color-surface</span>
+          <span class="token-chip">--radius-lg</span>
+          <span class="token-chip">--shadow-lg</span>
+          <span class="token-chip">--color-accent</span>
+          <span class="token-chip">--color-accent-dim</span>
+          <span class="token-chip">--color-surface-2</span>
+          <span class="token-chip">--duration-enter</span>
+          <span class="token-chip">--ease-emphasis</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- ───────────── 02 AddPhotoSheet · Desktop ───────────── -->
+    <section class="artboard" id="a02">
+      <header>
+        <span class="num">02</span>
+        <h3>AddPhotoSheet — Desktop</h3>
+        <span class="badge">Modal</span>
+      </header>
+      <p class="caption">데스크톱 480 modal. 갤러리 좌측 primary, 카메라 우측 secondary (모바일과 거울 배치) — 데스크톱은 카메라 접근성 낮음.</p>
+      <div class="stage">
+        <div class="device-desktop">
+          <div class="screen" style="display:flex; align-items:center; justify-content:center; padding: var(--spacing-8); background: var(--color-bg);">
+            <div style="background: var(--color-surface); border-radius: var(--radius-xl); width: 480px; padding: var(--spacing-6); box-shadow: var(--shadow-lg); position: relative;">
+              <button style="position:absolute; top: var(--spacing-4); right: var(--spacing-4); width:32px; height:32px; border-radius: var(--radius-full); background: var(--color-surface-2); border: none; cursor: pointer;">×</button>
+              <h4 style="font-family: var(--font-display); font-size: var(--text-title); font-weight: var(--text-title-font-weight); margin: 0 0 var(--spacing-2);">사진을 추가해요</h4>
+              <p style="color: var(--color-fg-muted); margin: 0 0 var(--spacing-5);">정면·좌·우, 한 장씩 천천히</p>
+              <div class="chips">
+                <button class="chip active">정면</button>
+                <button class="chip">좌</button>
+                <button class="chip">우</button>
+              </div>
+              <div style="display:grid; grid-template-columns: 1fr 1fr; gap: var(--spacing-2); margin-bottom: var(--spacing-3);">
+                <button class="cta primary">갤러리에서 고르기</button>
+                <button class="cta secondary">카메라로 찍기</button>
+              </div>
+              <p class="helper">어떤 각도부터 시작할까요?</p>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="footnote">
+        <strong>Tokens used.</strong>
+        <div class="token-list">
+          <span class="token-chip">--radius-xl</span>
+          <span class="token-chip">--shadow-lg</span>
+          <span class="token-chip">--color-accent</span>
+          <span class="token-chip">--color-surface-2</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- ───────────── 03 Permission · prompt ───────────── -->
+    <section class="artboard" id="a03">
+      <header>
+        <span class="num">03</span>
+        <h3>CaptureShell — Permission · prompt</h3>
+        <span class="badge">Initial</span>
+      </header>
+      <p class="caption">camera 권한 미요청 상태. accent CTA "허용" + 보조 "갤러리에서 고르기".</p>
+      <div class="stage">
+        <div class="device-mobile">
+          <div class="screen">
+            <div class="camera">
+              <div class="topbar">
+                <button aria-label="dismiss">←</button>
+                <span class="label">정면 · 1/3</span>
+                <span style="width:36px;"></span>
+              </div>
+              <div class="perm-card">
+                <div style="width:80px; height:80px; border-radius: var(--radius-full); background: rgba(255,255,255,0.08); display:flex; align-items:center; justify-content:center; margin-bottom: var(--spacing-5); font-size: 32px;">📷</div>
+                <h4>카메라를 잠깐 쓸게요</h4>
+                <p>사진을 정사각으로 정리해서 저장해요</p>
+                <div class="cta-stack">
+                  <button class="cta primary">허용</button>
+                  <button class="cta tertiary">갤러리에서 고르기</button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="footnote">
+        <strong>Tokens used.</strong>
+        <div class="token-list">
+          <span class="token-chip">--color-camera-bg</span>
+          <span class="token-chip">--color-accent</span>
+          <span class="token-chip">--color-surface</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- ───────────── 04 Permission · allowed ───────────── -->
+    <section class="artboard" id="a04">
+      <header>
+        <span class="num">04</span>
+        <h3>CaptureShell — Permission · allowed</h3>
+        <span class="badge">Live</span>
+      </header>
+      <p class="caption">라이브 프리뷰 + AngleGuide 오버레이 + 진행 도트(front filled, left active, right empty) + 셔터 + 사이드레일.</p>
+      <div class="stage">
+        <div class="device-mobile">
+          <div class="screen">
+            <div class="camera">
+              <div class="topbar">
+                <button aria-label="dismiss">←</button>
+                <span class="label">좌측 · 2/3</span>
+                <button aria-label="torch">⚡</button>
+              </div>
+              <div class="preview">
+                <div class="frame">
+                  <svg viewBox="0 0 200 200" width="220" height="220">
+                    <defs>
+                      <clipPath id="leftClipLive"><rect x="0" y="0" width="100" height="200"/></clipPath>
+                    </defs>
+                    <ellipse cx="100" cy="100" rx="78" ry="88"
+                             stroke="var(--color-camera-guide-oval)"
+                             fill="none" stroke-width="2"
+                             clip-path="url(#leftClipLive)"/>
+                    <line x1="115" y1="60" x2="115" y2="140"
+                          stroke="var(--color-camera-guide-line)"
+                          stroke-width="2" stroke-dasharray="4 4"/>
+                  </svg>
+                </div>
+              </div>
+              <div class="dots" aria-label="진행">
+                <span class="dot filled" title="정면"></span>
+                <span class="dot active" title="좌측"></span>
+                <span class="dot empty" title="우측"></span>
+              </div>
+              <div class="shutter-row">
+                <button class="siderail-btn" aria-label="switch">⇄</button>
+                <button class="shutter" aria-label="촬영"><span></span></button>
+                <button class="siderail-btn" aria-label="next">▾</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="footnote">
+        <strong>Tokens used.</strong>
+        <div class="token-list">
+          <span class="token-chip">--color-camera-bg</span>
+          <span class="token-chip">--color-camera-guide-oval</span>
+          <span class="token-chip">--color-camera-guide-line</span>
+          <span class="token-chip">--color-accent</span>
+          <span class="token-chip">--color-accent-dim</span>
+          <span class="token-chip">--color-surface</span>
+          <span class="token-chip">--shadow-raised</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- ───────────── 05 Permission · denied-once ───────────── -->
+    <section class="artboard" id="a05">
+      <header>
+        <span class="num">05</span>
+        <h3>CaptureShell — Permission · denied-once</h3>
+        <span class="badge">Recovery</span>
+      </header>
+      <p class="caption">한 번 거부 후. 부드러운 재시도 + 갤러리 fallback. 빨간 강한 경고 톤 사용 안 함.</p>
+      <div class="stage">
+        <div class="device-mobile">
+          <div class="screen">
+            <div class="camera">
+              <div class="topbar">
+                <button aria-label="dismiss">←</button>
+                <span class="label">정면 · 1/3</span>
+                <span style="width:36px;"></span>
+              </div>
+              <div class="perm-card">
+                <div style="width:64px; height:64px; border-radius: var(--radius-full); background: rgba(255,255,255,0.08); display:flex; align-items:center; justify-content:center; margin-bottom: var(--spacing-4); font-size: 28px;">🔒</div>
+                <h4>다시 한 번 허용해 주세요</h4>
+                <p>카메라 없이도 갤러리에서 고를 수 있어요.</p>
+                <div class="cta-stack">
+                  <button class="cta primary">다시 시도</button>
+                  <button class="cta tertiary">갤러리에서 고르기</button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="footnote">
+        <strong>Tokens used.</strong>
+        <div class="token-list">
+          <span class="token-chip">--color-camera-bg</span>
+          <span class="token-chip">--color-accent</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- ───────────── 06 Permission · denied-permanent ───────────── -->
+    <section class="artboard" id="a06">
+      <header>
+        <span class="num">06</span>
+        <h3>CaptureShell — Permission · denied-permanent</h3>
+        <span class="badge">Settings guide</span>
+      </header>
+      <p class="caption">영구 거부 시 OS별 단계 안내 + 갤러리 fallback. 본 시안은 iOS Safari 가정.</p>
+      <div class="stage">
+        <div class="device-mobile">
+          <div class="screen">
+            <div class="camera">
+              <div class="topbar">
+                <button aria-label="dismiss">←</button>
+                <span class="label">정면 · 1/3</span>
+                <span style="width:36px;"></span>
+              </div>
+              <div class="perm-card" style="text-align:left; align-items:flex-start;">
+                <h4 style="text-align:left;">브라우저 설정에서 권한을 켜주세요</h4>
+                <p style="text-align:left;">주소창 좌측 자물쇠 → 카메라 → 허용</p>
+                <ol>
+                  <li>주소창 좌측 자물쇠 아이콘을 눌러요</li>
+                  <li>"카메라" 항목을 "허용"으로 바꿔요</li>
+                  <li>페이지를 새로고침해요</li>
+                </ol>
+                <div class="cta-stack" style="margin-top: var(--spacing-5); width:100%;">
+                  <button class="cta secondary" style="background: rgba(255,255,255,0.08); color: var(--color-surface);">갤러리에서 고르기</button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="footnote">
+        <strong>Tokens used.</strong>
+        <div class="token-list">
+          <span class="token-chip">--color-camera-bg</span>
+          <span class="token-chip">--color-surface</span>
+          <span class="token-chip">--text-caption</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- ───────────── 07 Capture preview ───────────── -->
+    <section class="artboard" id="a07">
+      <header>
+        <span class="num">07</span>
+        <h3>CaptureShell — Capture preview</h3>
+        <span class="badge">Confirm</span>
+      </header>
+      <p class="caption">셔터 후 200ms freeze → 미리보기 시트. 다시 찍기 / 사용 분기. "사용" 선택 시 EXIF strip + 1024 리사이즈 + JPG 80%.</p>
+      <div class="stage">
+        <div class="device-mobile">
+          <div class="screen">
+            <div class="camera" style="opacity: 0.55;">
+              <div class="topbar">
+                <button aria-label="dismiss">←</button>
+                <span class="label">정면 · 1/3</span>
+                <span style="width:36px;"></span>
+              </div>
+              <div class="preview">
+                <div class="frame"></div>
+              </div>
+              <div class="dots"><span class="dot active"></span><span class="dot empty"></span><span class="dot empty"></span></div>
+              <div class="shutter-row" style="opacity:0;">
+                <button class="siderail-btn"></button>
+                <button class="shutter"><span></span></button>
+                <button class="siderail-btn"></button>
+              </div>
+            </div>
+            <div class="preview-sheet">
+              <div class="handle" aria-hidden="true"></div>
+              <div class="preview-img"></div>
+              <div class="row">
+                <button class="cta secondary">다시 찍기</button>
+                <button class="cta primary">사용</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="footnote">
+        <strong>Tokens used.</strong>
+        <div class="token-list">
+          <span class="token-chip">--color-surface</span>
+          <span class="token-chip">--radius-lg</span>
+          <span class="token-chip">--radius-md</span>
+          <span class="token-chip">--shadow-lg</span>
+          <span class="token-chip">--color-accent</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- ───────────── 08 AngleGuide 3-up ───────────── -->
+    <section class="artboard" id="a08">
+      <header>
+        <span class="num">08</span>
+        <h3>AngleGuide — front · left · right</h3>
+        <span class="badge">SVG path</span>
+      </header>
+      <p class="caption">viewBox 0 0 200 200, stroke 2. 정렬 OK = guide-oval, fail = check-warn(별도 시안). 본 화면은 OK 상태.</p>
+      <div class="stage">
+        <div class="angle-grid">
+          <div class="angle-card">
+            <svg viewBox="0 0 200 200">
+              <ellipse cx="100" cy="100" rx="78" ry="88"
+                       stroke="var(--color-camera-guide-oval)"
+                       fill="none" stroke-width="2"/>
+            </svg>
+            <div class="name">front</div>
+          </div>
+          <div class="angle-card">
+            <svg viewBox="0 0 200 200">
+              <defs>
+                <clipPath id="leftClipA"><rect x="0" y="0" width="100" height="200"/></clipPath>
+              </defs>
+              <ellipse cx="100" cy="100" rx="78" ry="88"
+                       stroke="var(--color-camera-guide-oval)"
+                       fill="none" stroke-width="2"
+                       clip-path="url(#leftClipA)"/>
+              <line x1="115" y1="60" x2="115" y2="140"
+                    stroke="var(--color-camera-guide-line)" stroke-width="2"
+                    stroke-dasharray="4 4"/>
+            </svg>
+            <div class="name">left</div>
+          </div>
+          <div class="angle-card">
+            <svg viewBox="0 0 200 200">
+              <defs>
+                <clipPath id="rightClipA"><rect x="100" y="0" width="100" height="200"/></clipPath>
+              </defs>
+              <ellipse cx="100" cy="100" rx="78" ry="88"
+                       stroke="var(--color-camera-guide-oval)"
+                       fill="none" stroke-width="2"
+                       clip-path="url(#rightClipA)"/>
+              <line x1="85" y1="60" x2="85" y2="140"
+                    stroke="var(--color-camera-guide-line)" stroke-width="2"
+                    stroke-dasharray="4 4"/>
+            </svg>
+            <div class="name">right</div>
+          </div>
+        </div>
+      </div>
+      <div class="footnote">
+        <strong>Tokens used.</strong>
+        <div class="token-list">
+          <span class="token-chip">--color-camera-bg</span>
+          <span class="token-chip">--color-camera-guide-oval</span>
+          <span class="token-chip">--color-camera-guide-line</span>
+          <span class="token-chip">--color-camera-check-ok</span>
+          <span class="token-chip">--color-camera-check-warn</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- ───────────── 09 Empty grid ───────────── -->
+    <section class="artboard" id="a09">
+      <header>
+        <span class="num">09</span>
+        <h3>PhotoCapture grid — Empty</h3>
+        <span class="badge">Initial</span>
+      </header>
+      <p class="caption">3슬롯 모두 비어있음. 점선 테두리 + Plus 아이콘 + angle 라벨 (caption). tap → AddPhotoSheet open with defaultAngle.</p>
+      <div class="stage">
+        <div class="device-mobile">
+          <div class="screen" style="background: var(--color-bg);">
+            <div style="padding: var(--spacing-5) var(--spacing-5) 0;">
+              <div style="display:flex; justify-content:space-between; align-items:baseline; margin-bottom: var(--spacing-4);">
+                <h5 style="margin:0; font-size: var(--text-title); font-weight: var(--text-title-font-weight); font-family: var(--font-display);">오늘의 사진</h5>
+                <span style="font-size: var(--text-caption); color: var(--color-fg-muted);">2026-05-09</span>
+              </div>
+            </div>
+            <div class="photo-grid">
+              <div class="slot empty">
+                <div class="plus">+</div>
+                <div class="label">정면</div>
+              </div>
+              <div class="slot empty">
+                <div class="plus">+</div>
+                <div class="label">좌측</div>
+              </div>
+              <div class="slot empty">
+                <div class="plus">+</div>
+                <div class="label">우측</div>
+              </div>
+            </div>
+            <p style="font-size: var(--text-caption); color: var(--color-fg-muted); padding: 0 var(--spacing-5);">한 장씩 천천히 추가해도 괜찮아요.</p>
+          </div>
+        </div>
+      </div>
+      <div class="footnote">
+        <strong>Tokens used.</strong>
+        <div class="token-list">
+          <span class="token-chip">--color-surface</span>
+          <span class="token-chip">--color-border-strong</span>
+          <span class="token-chip">--color-fg-muted</span>
+          <span class="token-chip">--radius-md</span>
+          <span class="token-chip">--text-caption</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- ───────────── 10 Filled grid ───────────── -->
+    <section class="artboard" id="a10">
+      <header>
+        <span class="num">10</span>
+        <h3>PhotoCapture grid — Filled</h3>
+        <span class="badge">Populated</span>
+      </header>
+      <p class="caption">3슬롯 모두 채워짐. 우상단 ⋯ 버튼(28 ring, surface bg, shadow-raised). 좌하단 angle badge(accent-dim).</p>
+      <div class="stage">
+        <div class="device-mobile">
+          <div class="screen" style="background: var(--color-bg);">
+            <div style="padding: var(--spacing-5) var(--spacing-5) 0;">
+              <div style="display:flex; justify-content:space-between; align-items:baseline; margin-bottom: var(--spacing-4);">
+                <h5 style="margin:0; font-size: var(--text-title); font-weight: var(--text-title-font-weight); font-family: var(--font-display);">오늘의 사진</h5>
+                <span style="font-size: var(--text-caption); color: var(--color-fg-muted);">2026-05-09</span>
+              </div>
+            </div>
+            <div class="photo-grid">
+              <div class="slot filled">
+                <button class="more-btn" aria-label="더보기">⋯</button>
+                <span class="label-badge">정면</span>
+              </div>
+              <div class="slot filled" style="background: linear-gradient(135deg, #c8a888 0%, #a88868 100%);">
+                <button class="more-btn" aria-label="더보기">⋯</button>
+                <span class="label-badge">좌측</span>
+              </div>
+              <div class="slot filled" style="background: linear-gradient(135deg, #d0b298 0%, #b09078 100%);">
+                <button class="more-btn" aria-label="더보기">⋯</button>
+                <span class="label-badge">우측</span>
+              </div>
+            </div>
+            <p style="font-size: var(--text-caption); color: var(--color-fg-muted); padding: 0 var(--spacing-5);">⋯ 버튼으로 다시 촬영·교체·삭제할 수 있어요.</p>
+          </div>
+        </div>
+      </div>
+      <div class="footnote">
+        <strong>Tokens used.</strong>
+        <div class="token-list">
+          <span class="token-chip">--color-surface</span>
+          <span class="token-chip">--shadow-raised</span>
+          <span class="token-chip">--color-accent-dim</span>
+          <span class="token-chip">--color-accent-text</span>
+          <span class="token-chip">--radius-md</span>
+          <span class="token-chip">--radius-full</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- ───────────── 11 More menu open ───────────── -->
+    <section class="artboard" id="a11">
+      <header>
+        <span class="num">11</span>
+        <h3>PhotoCapture grid — More menu</h3>
+        <span class="badge">Action sheet</span>
+      </header>
+      <p class="caption">⋯ 버튼 또는 long-press 400ms로 액션 시트 진입. 다시 촬영 / 갤러리에서 교체 / 삭제. 삭제는 optimistic + undo 토스트(5s).</p>
+      <div class="stage">
+        <div class="device-mobile">
+          <div class="screen" style="background: var(--color-bg);">
+            <div style="padding: var(--spacing-5) var(--spacing-5) 0; opacity: 0.55;">
+              <div style="display:flex; justify-content:space-between; align-items:baseline; margin-bottom: var(--spacing-4);">
+                <h5 style="margin:0; font-size: var(--text-title); font-weight: var(--text-title-font-weight); font-family: var(--font-display);">오늘의 사진</h5>
+                <span style="font-size: var(--text-caption); color: var(--color-fg-muted);">2026-05-09</span>
+              </div>
+            </div>
+            <div class="photo-grid" style="opacity: 0.55;">
+              <div class="slot filled">
+                <button class="more-btn" aria-label="더보기">⋯</button>
+                <span class="label-badge">정면</span>
+              </div>
+              <div class="slot filled" style="background: linear-gradient(135deg, #c8a888 0%, #a88868 100%);">
+                <button class="more-btn" aria-label="더보기">⋯</button>
+                <span class="label-badge">좌측</span>
+              </div>
+              <div class="slot empty">
+                <div class="plus">+</div>
+                <div class="label">우측</div>
+              </div>
+            </div>
+            <div class="backdrop"></div>
+            <div class="action-menu">
+              <div class="handle" aria-hidden="true"></div>
+              <button class="item">
+                <span style="width:24px; text-align:center;">↻</span>
+                <span>다시 촬영</span>
+              </button>
+              <button class="item">
+                <span style="width:24px; text-align:center;">🖼</span>
+                <span>갤러리에서 교체</span>
+              </button>
+              <div class="divider" aria-hidden="true"></div>
+              <button class="item">
+                <span style="width:24px; text-align:center;">🗑</span>
+                <span>삭제</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="footnote">
+        <strong>Tokens used.</strong>
+        <div class="token-list">
+          <span class="token-chip">--color-surface</span>
+          <span class="token-chip">--color-surface-2</span>
+          <span class="token-chip">--color-border</span>
+          <span class="token-chip">--shadow-lg</span>
+          <span class="token-chip">--radius-lg</span>
+          <span class="token-chip">--color-fg-subtle</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- ───────────── 12 Future + Toasts ───────────── -->
+    <section class="artboard" id="a12">
+      <header>
+        <span class="num">12</span>
+        <h3>Edge cases — Future calendar &amp; Toasts</h3>
+        <span class="badge">Edge</span>
+      </header>
+      <p class="caption">좌: 미래 날짜 비활성 셀(opacity 40%, pointer-events:none). 우: single-stack 토스트 4종 (uploading / uploaded / failed / retry-pending).</p>
+      <div class="stage">
+        <div class="split-2" style="width:100%; max-width: 800px;">
+          <!-- Calendar -->
+          <div class="device-mobile">
+            <div class="screen" style="background: var(--color-surface);">
+              <div class="calendar">
+                <div class="cal-head">
+                  <h5>2026년 5월</h5>
+                  <div class="nav-btns"><button>‹</button><button>›</button></div>
+                </div>
+                <div class="cal-grid">
+                  <div class="cal-cell head">일</div>
+                  <div class="cal-cell head">월</div>
+                  <div class="cal-cell head">화</div>
+                  <div class="cal-cell head">수</div>
+                  <div class="cal-cell head">목</div>
+                  <div class="cal-cell head">금</div>
+                  <div class="cal-cell head">토</div>
+
+                  <div class="cal-cell"></div><div class="cal-cell"></div><div class="cal-cell"></div><div class="cal-cell"></div>
+                  <div class="cal-cell">1</div><div class="cal-cell has-record" style="position:relative;">2</div><div class="cal-cell">3</div>
+
+                  <div class="cal-cell">4</div><div class="cal-cell has-record" style="position:relative;">5</div><div class="cal-cell">6</div><div class="cal-cell has-record" style="position:relative;">7</div>
+                  <div class="cal-cell">8</div><div class="cal-cell today">9</div><div class="cal-cell future">10</div>
+
+                  <div class="cal-cell future">11</div><div class="cal-cell future">12</div><div class="cal-cell future">13</div><div class="cal-cell future">14</div>
+                  <div class="cal-cell future">15</div><div class="cal-cell future">16</div><div class="cal-cell future">17</div>
+
+                  <div class="cal-cell future">18</div><div class="cal-cell future">19</div><div class="cal-cell future">20</div><div class="cal-cell future">21</div>
+                  <div class="cal-cell future">22</div><div class="cal-cell future">23</div><div class="cal-cell future">24</div>
+
+                  <div class="cal-cell future">25</div><div class="cal-cell future">26</div><div class="cal-cell future">27</div><div class="cal-cell future">28</div>
+                  <div class="cal-cell future">29</div><div class="cal-cell future">30</div><div class="cal-cell future">31</div>
+                </div>
+                <p style="font-size: var(--text-caption); color: var(--color-fg-muted); margin-top: var(--spacing-4);">아직 오지 않은 날은 흐리게 표시돼요.</p>
+              </div>
+            </div>
+          </div>
+
+          <!-- Toasts -->
+          <div class="device-mobile">
+            <div class="screen" style="background: var(--color-bg);">
+              <div class="toasts">
+                <div class="toast" role="status">
+                  <div class="icon spinner" aria-hidden="true"></div>
+                  <div class="text">올리는 중...</div>
+                </div>
+                <div class="toast success" role="status">
+                  <div class="icon" aria-hidden="true">✓</div>
+                  <div class="text">저장됐어요</div>
+                </div>
+                <div class="toast" role="alert">
+                  <div class="icon" aria-hidden="true" style="color: var(--color-camera-check-warn);">!</div>
+                  <div class="text">잠깐 멈췄어요. 다시 시도할게요</div>
+                  <button class="action-btn">다시 시도</button>
+                </div>
+                <div class="toast" role="status">
+                  <div class="icon spinner" aria-hidden="true"></div>
+                  <div class="text">올리는 중...</div>
+                </div>
+              </div>
+              <p style="font-size: var(--text-caption); color: var(--color-fg-muted); padding: 0 var(--spacing-5);">실제 화면은 동시에 1개만 표시 (single-stack + 250ms grace).</p>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="footnote">
+        <strong>Tokens used.</strong>
+        <div class="token-list">
+          <span class="token-chip">--color-surface</span>
+          <span class="token-chip">--color-surface-2</span>
+          <span class="token-chip">--color-accent</span>
+          <span class="token-chip">--color-accent-dim</span>
+          <span class="token-chip">--color-accent-text</span>
+          <span class="token-chip">--color-fg-subtle</span>
+          <span class="token-chip">--color-camera-check-warn</span>
+          <span class="token-chip">--shadow-raised</span>
+          <span class="token-chip">--radius-md</span>
+          <span class="token-chip">--radius-sm</span>
+        </div>
+      </div>
+    </section>
+
+    <footer style="padding: var(--spacing-8) 0; color: var(--color-fg-subtle); font-size: var(--text-caption); border-top: 1px solid var(--color-border);">
+      <p style="margin:0;">Skin Diary — PhotoCapture Flow Visual Showcase · v1.0 · 2026-05-09</p>
+      <p style="margin:0;">단일 진실원: <code>handoff/PhotoCapture Flow - Spec.md</code> · 토큰 미러: <code>./tokens.css</code> ← <code>handoff/tokens/colors.css</code></p>
+    </footer>
+  </main>
+</div>
+</body>
+</html>

@@ -1,0 +1,51 @@
+rules_version = '2';
+
+// ----------------------------------------------------------------------------
+// Skin Diary — Storage Security Rules
+//
+// Path contract (CLAUDE.md §1, §2):
+//   /{uid}/{yyyy-mm-dd}/{front|left|right}.jpg
+//
+// Image format (enforced by client `lib/image/normalize.ts` AND by these
+// rules):
+//   - 1024x1024 JPG, quality ~0.82, EXIF stripped
+//   - Expected size: 200~400KB; 500KB is the bypass cap.
+// ----------------------------------------------------------------------------
+service firebase.storage {
+  match /b/{bucket}/o {
+
+    // -- Helpers ------------------------------------------------------------
+    function isOwner(uid) {
+      return request.auth != null && request.auth.uid == uid;
+    }
+
+    function isValidDate(date) {
+      return date.matches('^\\d{4}-\\d{2}-\\d{2}$');
+    }
+
+    function isAllowedFilename(filename) {
+      return filename.matches('^(front|left|right)\\.jpg$');
+    }
+
+    // -- Daily photos -------------------------------------------------------
+    match /{uid}/{date}/{filename} {
+      // Read scoped to owner. (Future: shared/compare-link feature would
+      // require revisiting this — track in DESIGN.md before relaxing.)
+      allow read: if isOwner(uid);
+
+      allow write: if isOwner(uid)
+                   && isValidDate(date)
+                   && isAllowedFilename(filename)
+                   && request.resource.size < 500 * 1024
+                   && request.resource.contentType == 'image/jpeg';
+
+      // Owner may delete to replace a photo (re-shoot UX).
+      allow delete: if isOwner(uid);
+    }
+
+    // Default deny for any path outside the contract above.
+    match /{path=**} {
+      allow read, write: if false;
+    }
+  }
+}

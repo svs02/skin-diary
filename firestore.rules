@@ -1,0 +1,136 @@
+rules_version = '2';
+
+// ----------------------------------------------------------------------------
+// Skin Diary — Firestore Security Rules
+//
+// Data model (CLAUDE.md §3, §4):
+//   users/{uid}                                 — user profile
+//   users/{uid}/dailyRecords/{yyyy-mm-dd}       — one record per user/day
+//
+// Defense-in-depth notes:
+//   - Default deny: any path not matched below is rejected.
+//   - Future-date writes are blocked at the rules level (not only in the UI).
+//     `request.time` is UTC; we use a 1-day forward tolerance window so users
+//     in any timezone can still record "today" without false rejections.
+//   - Field-level validation prevents writes from a hostile client bypassing
+//     the UI (size limits, key whitelist, type checks).
+// ----------------------------------------------------------------------------
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // -- Helpers ------------------------------------------------------------
+    function isOwner(uid) {
+      return request.auth != null && request.auth.uid == uid;
+    }
+
+    // Parse a "yyyy-mm-dd" string into a UTC midnight timestamp.
+    // Rules language has no string→timestamp parser, so we slice the
+    // fixed-width substrings and feed integers into timestamp.date().
+    function parseDateKey(date) {
+      return timestamp.date(
+        int(date[0:4]),
+        int(date[5:7]),
+        int(date[8:10])
+      );
+    }
+
+    // yyyy-mm-dd format AND not in the future.
+    // We compare against `request.time + 1 day` so users in any timezone
+    // (e.g. KST 00:00–09:00 when UTC is still on the previous day) can
+    // record their local "today" without false rejections. Inputs more
+    // than ~1 day past UTC now are still rejected.
+    function isValidDate(date) {
+      return date.matches('^\\d{4}-\\d{2}-\\d{2}$')
+             && parseDateKey(date) <= request.time + duration.value(1, 'd');
+    }
+
+    function isValidPhotos(photos) {
+      return photos is map
+             && photos.keys().hasOnly(['front', 'left', 'right'])
+             && (!('front' in photos) || photos.front is bool)
+             && (!('left'  in photos) || photos.left  is bool)
+             && (!('right' in photos) || photos.right is bool);
+    }
+
+    // String OR null, with max length. Empty string allowed (skip behavior).
+    function isShortText(v, maxLen) {
+      return v == null || (v is string && v.size() <= maxLen);
+    }
+
+    // -- User profile -------------------------------------------------------
+    match /users/{uid} {
+      allow read: if isOwner(uid);
+
+      allow create: if isOwner(uid)
+                    && request.resource.data.keys().hasOnly(
+                         ['uid', 'email', 'provider', 'createdAt']
+                       )
+                    && request.resource.data.uid == uid
+                    && request.resource.data.email is string
+                    && request.resource.data.email == request.auth.token.email
+                    && request.resource.data.provider in ['google', 'password'];
+
+      allow update: if isOwner(uid)
+                    && request.resource.data.keys().hasOnly(
+                         ['uid', 'email', 'provider', 'createdAt']
+                       )
+                    && request.resource.data.uid == uid
+                    && request.resource.data.email == request.auth.token.email
+                    && request.resource.data.provider in ['google', 'password'];
+
+      // Profiles are not user-deletable from the client. Account deletion
+      // must go through an admin/server flow.
+      allow delete: if false;
+
+      // -- Daily records --------------------------------------------------
+      match /dailyRecords/{date} {
+        allow read: if isOwner(uid);
+
+        allow create: if isOwner(uid)
+                      && isValidDate(date)
+                      && request.resource.data.keys().hasOnly(
+                           ['date', 'photos', 'water', 'food',
+                            'cosmetic', 'exercise', 'memo',
+                            'createdAt', 'updatedAt',
+                            'lifestyleSavedAt', 'isDraft']
+                         )
+                      && request.resource.data.date == date
+                      && isValidPhotos(request.resource.data.photos)
+                      && request.resource.data.water is int
+                      && request.resource.data.water >= 0
+                      && request.resource.data.water <= 30
+                      && request.resource.data.exercise is bool
+                      && isShortText(request.resource.data.food, 200)
+                      && isShortText(request.resource.data.cosmetic, 200)
+                      && isShortText(request.resource.data.memo, 1000);
+
+        allow update: if isOwner(uid)
+                      && isValidDate(date)
+                      && request.resource.data.keys().hasOnly(
+                           ['date', 'photos', 'water', 'food',
+                            'cosmetic', 'exercise', 'memo',
+                            'createdAt', 'updatedAt',
+                            'lifestyleSavedAt', 'isDraft']
+                         )
+                      && request.resource.data.date == date
+                      && isValidPhotos(request.resource.data.photos)
+                      && request.resource.data.water is int
+                      && request.resource.data.water >= 0
+                      && request.resource.data.water <= 30
+                      && request.resource.data.exercise is bool
+                      && isShortText(request.resource.data.food, 200)
+                      && isShortText(request.resource.data.cosmetic, 200)
+                      && isShortText(request.resource.data.memo, 1000);
+
+        // Records are append-only from the user perspective (avoid accidental
+        // wipe). Use update with cleared fields if a "reset" UX is needed.
+        allow delete: if false;
+      }
+    }
+
+    // Default deny for anything else.
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}

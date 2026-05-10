@@ -1,11 +1,10 @@
 /**
- * America/Vancouver (PST/PDT, DST 자동 반영) 기준 YYYY-MM-DD 키.
- * CLAUDE.md §2.1 파일/문서 키 규약에 사용.
+ * 사용자 디바이스 로컬 타임존 기준 YYYY-MM-DD 키.
+ * - CLAUDE.md §2.1 파일/문서 키 규약에 사용.
+ * - CLAUDE.md §5.2 "오늘 날짜 자동 선택"의 자연스러운 해석 = 사용자 로컬 TZ.
+ * - Firestore Rules는 ±1일 tolerance로 글로벌 TZ 안전성을 보장한다.
  */
-export const APP_TIMEZONE = 'America/Vancouver';
-
 const formatter = new Intl.DateTimeFormat('en-CA', {
-  timeZone: APP_TIMEZONE,
   year: 'numeric',
   month: '2-digit',
   day: '2-digit',
@@ -25,7 +24,7 @@ export function isValidDateKey(value: string): boolean {
 }
 
 /**
- * dateKey가 앱 타임존(America/Vancouver) 기준 오늘보다 미래인지 판단.
+ * dateKey가 사용자 로컬 TZ 기준 오늘보다 미래인지 판단.
  * - CLAUDE.md §5.5: 미래 날짜 기록 작성/수정 금지.
  * - 문자열 비교(`YYYY-MM-DD`는 사전순 = 시간순)로 충분.
  * - 형식이 잘못된 입력은 false 반환 (호출부에서 isValidDateKey로 별도 확인).
@@ -37,7 +36,7 @@ export function isFuture(dateKey: string, now: Date = new Date()): boolean {
 
 /**
  * dateKey(YYYY-MM-DD)에서 days 만큼 더한 dateKey 반환.
- * UTC 산술 사용 — 문자열 비교가 사전순=시간순이라 타임존 영향 없음 (저장된 키는 이미 앱 TZ 기준).
+ * UTC 산술 사용 — 문자열 비교가 사전순=시간순이라 타임존 영향 없음 (저장된 키는 이미 로컬 TZ 기준).
  */
 export function addDaysKey(dateKey: string, days: number): string {
   if (!isValidDateKey(dateKey)) {

@@ -74,7 +74,82 @@
         "upload": "Upload failed. Try again.",
         "load": "Couldn't load image",
         "missing": "Photo missing — retake?"
+      },
+      "emptySlot": "+ Add {angle}",
+      "sheet": {
+        "title": "Add a photo",
+        "subtitle": "Front · Left · Right, one at a time",
+        "cta": {
+          "camera": "Use camera",
+          "gallery": "Choose from gallery",
+          "cameraUnavailable": "No camera detected. Try gallery instead."
+        },
+        "cancel": "Close",
+        "angle": {
+          "helper": "Which angle first?"
+        }
+      },
+      "menu": {
+        "openAria": "Open photo menu",
+        "retake": "Retake",
+        "replace": "Replace from gallery",
+        "delete": "Delete",
+        "deletedToast": "Deleted",
+        "undo": "Undo",
+        "cancel": "Close"
+      },
+      "toast": {
+        "uploading": "Uploading...",
+        "uploaded": "Saved",
+        "failed": "Hold on, retrying",
+        "retry": "Retry"
       }
+    },
+    "calendar": {
+      "future": {
+        "disabled": "Future date — not available",
+        "toast": "You can't record for future dates yet."
+      }
+    },
+    "capture": {
+      "permission": {
+        "prompt": {
+          "title": "Allow camera",
+          "body": "Photos save as 1:1 squares"
+        },
+        "allow": "Allow",
+        "gallery": "Choose from gallery",
+        "deniedOnce": {
+          "title": "Try once more",
+          "body": "You can pick from gallery instead"
+        },
+        "deniedPermanent": {
+          "title": "Open browser settings",
+          "body": "Lock icon · Camera · Allow"
+        }
+      },
+      "angle": {
+        "front": "Front",
+        "left": "Left",
+        "right": "Right"
+      },
+      "shutter": "Capture",
+      "preview": {
+        "use": "Use",
+        "retake": "Retake"
+      },
+      "error": {
+        "notFound": {
+          "title": "No camera",
+          "body": "Pick a photo from gallery"
+        },
+        "notReadable": {
+          "title": "Camera in use",
+          "body": "Another app may be using the camera"
+        }
+      },
+      "retry": "Try again",
+      "close": "Close"
     }
   },
   "calendar": {
@@ -136,12 +211,12 @@
       "title": "This week",
       "fraction": "{done}/7",
       "weekdaysShort": [
+        "S",
         "M",
         "T",
         "W",
         "T",
         "F",
-        "S",
         "S"
       ]
     },
@@ -361,7 +436,7 @@
         },
         {
           "title": "9. Contact",
-          "body": "For privacy questions, contact [maker email]. Skin Diary is a beta service run by a single maker, so replies may take a few days."
+          "body": "For privacy questions, contact svs02po@gmail.com. Skin Diary is a beta service run by a single maker, so replies may take a few days."
         }
       ]
     },
@@ -412,7 +487,7 @@
         },
         {
           "title": "9. Contact",
-          "body": "For questions about these terms, contact [maker email]."
+          "body": "For questions about these terms, contact svs02po@gmail.com."
         }
       ]
     }

@@ -1,13 +1,14 @@
 'use client';
 
 import { use, useCallback, useEffect, useState } from 'react';
-import { notFound, redirect } from 'next/navigation';
+import { notFound, useRouter } from 'next/navigation';
 import { useLocale, useTranslations } from 'next-intl';
 import { useAuth } from '@/lib/auth/AuthProvider';
 import { getDailyRecord } from '@/lib/firebase/dailyRecord';
 import { isFuture, isValidDateKey, todayKey } from '@/lib/utils/dateKey';
 import { PhotoCapture } from '@/components/PhotoCapture';
 import { LifestyleSection } from '@/components/LifestyleSection';
+import { useToast } from '@/lib/toast';
 import type { Angle, DailyRecord } from '@/types';
 
 const EMPTY_PHOTOS: Record<Angle, boolean> = { front: false, left: false, right: false };
@@ -41,6 +42,9 @@ export default function RecordPage({
   const { user } = useAuth();
   const locale = useLocale();
   const t = useTranslations('record');
+  const tFuture = useTranslations('record.calendar.future');
+  const router = useRouter();
+  const toast = useToast();
   const [record, setRecord] = useState<DailyRecord | null>(null);
   const [loaded, setLoaded] = useState(false);
 
@@ -67,9 +71,20 @@ export default function RecordPage({
     };
   }, [user, dateKey, guardFailed]);
 
-  // 라우트 가드 — 형식 위반은 404, 미래는 캘린더로 돌려보낸다 (CLAUDE.md §5.5)
+  // 미래 날짜는 오늘로 부드럽게 되돌린다 (CLAUDE.md §5.5)
+  useEffect(() => {
+    if (!isValidDateKey(dateKey)) return;
+    if (isFuture(dateKey)) {
+      toast.info(tFuture('toast'));
+      router.replace(`/record/${todayKey()}`);
+    }
+  }, [dateKey, router, toast, tFuture]);
+
+  // 라우트 가드 — 형식 위반은 404, 미래는 placeholder로 잠시 가린 뒤 위 effect가 replace
   if (!isValidDateKey(dateKey)) notFound();
-  if (isFuture(dateKey)) redirect('/calendar');
+  if (isFuture(dateKey)) {
+    return <div className="h-32 animate-pulse rounded-[18px] bg-surface-2" />;
+  }
 
   const isToday = dateKey === todayKey();
   const hero = formatHero(dateKey, locale);

@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 240 64" role="img" aria-label="Skin Diary">
+  <g>
+    <circle cx="32" cy="32" r="22" fill="none" stroke="currentColor" stroke-width="2.4"/>
+    <path d="M32 10 A 22 22 0 0 1 32 54 Z" fill="currentColor"/>
+  </g>
+  <g font-family="Pretendard, 'Pretendard Variable', system-ui, -apple-system, 'Apple SD Gothic Neo', sans-serif" fill="currentColor">
+    <text x="76" y="33" font-size="28" font-weight="600" letter-spacing="-0.84">Skin Diary</text>
+    <text x="76" y="49" fill-opacity="0.7" font-size="14" font-weight="500" letter-spacing="0.28">스킨 다이어리</text>
+  </g>
+</svg>

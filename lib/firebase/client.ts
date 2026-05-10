@@ -14,8 +14,6 @@ if (!isFirebaseConfigured && typeof window !== 'undefined') {
   );
 }
 
-const measurementId = process.env.NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID;
-
 const firebaseConfig = {
   apiKey: apiKey ?? 'AIza-DEV-PLACEHOLDER',
   authDomain: process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN ?? 'localhost',
@@ -25,7 +23,6 @@ const firebaseConfig = {
   messagingSenderId:
     process.env.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID ?? '000000000000',
   appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID ?? '1:000:web:000',
-  ...(measurementId ? { measurementId } : {}),
 };
 
 const app: FirebaseApp = getApps()[0] ?? initializeApp(firebaseConfig);
@@ -33,5 +30,4 @@ const app: FirebaseApp = getApps()[0] ?? initializeApp(firebaseConfig);
 export const auth: Auth = getAuth(app);
 export const db: Firestore = getFirestore(app);
 export const storage: FirebaseStorage = getStorage(app);
-export const hasAnalyticsConfig = !!measurementId;
 export { app };

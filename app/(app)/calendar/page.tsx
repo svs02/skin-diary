@@ -1,11 +1,12 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import { useLocale, useTranslations } from 'next-intl';
 import { useAuth } from '@/lib/auth/AuthProvider';
 import { listRecordKeysInRange } from '@/lib/firebase/dailyRecord';
 import { isFuture, todayKey } from '@/lib/utils/dateKey';
+import { useToast } from '@/lib/toast';
 
 const WEEKDAY_KEYS = ['sun', 'mon', 'tue', 'wed', 'thu', 'fri', 'sat'] as const;
 
@@ -64,6 +65,13 @@ export default function CalendarPage() {
   const locale = useLocale();
   const t = useTranslations('calendar');
   const tWeek = useTranslations('calendar.weekdays');
+  const tFuture = useTranslations('record.calendar.future');
+  const toast = useToast();
+  const futureToastMessage = tFuture('toast');
+  const futureAriaLabel = tFuture('disabled');
+  const handleFutureTap = useCallback(() => {
+    toast.info(futureToastMessage);
+  }, [toast, futureToastMessage]);
 
   const today = useMemo(() => todayKey(), []);
   const [year, setYear] = useState(() => Number(today.slice(0, 4)));
@@ -144,6 +152,8 @@ export default function CalendarPage() {
             cell={c}
             hasRecord={recordKeys.has(c.dateKey)}
             futureLabel={t('futureDisabled')}
+            futureAriaLabel={futureAriaLabel}
+            onFutureTap={handleFutureTap}
           />
         ))}
       </div>
@@ -155,10 +165,14 @@ function DayCell({
   cell,
   hasRecord,
   futureLabel,
+  futureAriaLabel,
+  onFutureTap,
 }: {
   cell: Cell;
   hasRecord: boolean;
   futureLabel: string;
+  futureAriaLabel: string;
+  onFutureTap: () => void;
 }) {
   const dim = !cell.inMonth;
   const base =
@@ -166,14 +180,16 @@ function DayCell({
 
   if (cell.disabled) {
     return (
-      <div
+      <button
+        type="button"
+        onClick={onFutureTap}
         aria-disabled="true"
-        className={`${base} cursor-not-allowed text-fg-subtle ${dim ? 'opacity-40' : ''}`}
+        aria-label={futureAriaLabel}
         title={futureLabel}
+        className={`${base} cursor-not-allowed text-fg-subtle ${dim ? 'opacity-40' : ''}`}
       >
-        <span>{cell.day}</span>
-        <span className="sr-only">{futureLabel}</span>
-      </div>
+        <span aria-hidden>{cell.day}</span>
+      </button>
     );
   }
 

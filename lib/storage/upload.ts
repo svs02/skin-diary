@@ -1,4 +1,4 @@
-import { getDownloadURL, ref, uploadBytes } from 'firebase/storage';
+import { deleteObject, getDownloadURL, ref, uploadBytes } from 'firebase/storage';
 import { storage } from '@/lib/firebase/client';
 import { isFuture, isValidDateKey } from '@/lib/utils/dateKey';
 import type { Angle } from '@/types';
@@ -73,4 +73,39 @@ export async function getAngleDownloadURL(
   angle: Angle,
 ): Promise<string> {
   return getDownloadURL(ref(storage, anglePath(uid, dateKey, angle)));
+}
+
+/**
+ * 업로드된 angle 사진을 삭제한다 (Spec §3 메뉴의 "삭제" 액션).
+ * 가드:
+ *  - dateKey 형식 검증 (Storage Rules와 동일 규약)
+ *  - 미래 날짜 차단 (객체는 존재할 수 없으나 일관성 + 클라 실수 방지)
+ * 멱등 보장: 객체가 이미 없는 경우(`storage/object-not-found`)는 silent ignore —
+ * optimistic delete + retry 흐름에서 안전.
+ */
+export async function deleteAnglePhoto(
+  uid: string,
+  dateKey: string,
+  angle: Angle,
+): Promise<void> {
+  if (!isValidDateKey(dateKey)) {
+    throw new PhotoUploadError('invalid-date', `Invalid dateKey: ${dateKey}`);
+  }
+  if (isFuture(dateKey)) {
+    throw new PhotoUploadError('future-date', `Future dateKey not allowed: ${dateKey}`);
+  }
+
+  const objectRef = ref(storage, anglePath(uid, dateKey, angle));
+  try {
+    await deleteObject(objectRef);
+  } catch (err) {
+    const code = (err as { code?: string } | null)?.code;
+    if (code === 'storage/object-not-found') {
+      return; // 멱등: 이미 삭제됨
+    }
+    throw new PhotoUploadError(
+      'storage',
+      err instanceof Error ? err.message : 'Storage delete failed',
+    );
+  }
 }

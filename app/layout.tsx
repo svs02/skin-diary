@@ -1,9 +1,10 @@
 import type { Metadata } from 'next';
 import localFont from 'next/font/local';
+import { headers } from 'next/headers';
 import { NextIntlClientProvider } from 'next-intl';
 import { getLocale, getMessages } from 'next-intl/server';
 import { AuthProvider } from '@/lib/auth/AuthProvider';
-import { AnalyticsBootstrapper } from '@/components/AnalyticsBootstrapper';
+import { ToastProvider } from '@/lib/toast';
 import './globals.css';
 
 // Pretendard Variable — single woff2 covering 100..900 weights.
@@ -17,8 +18,18 @@ const pretendard = localFont({
 });
 
 export const metadata: Metadata = {
+  metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL ?? 'https://skindiary.net'),
   title: 'Skin Diary',
   description: 'Track your skin, one day at a time.',
+  icons: {
+    icon: [
+      { url: '/favicon.svg', type: 'image/svg+xml' },
+      { url: '/favicon.ico', sizes: 'any' },
+      { url: '/favicon-16.png', sizes: '16x16', type: 'image/png' },
+      { url: '/favicon-32.png', sizes: '32x32', type: 'image/png' },
+    ],
+    apple: [{ url: '/apple-touch-icon.png', sizes: '180x180', type: 'image/png' }],
+  },
 };
 
 // Runs before React hydration to set <html data-theme> from localStorage,
@@ -32,6 +43,9 @@ export default async function RootLayout({
 }>) {
   const locale = await getLocale();
   const messages = await getMessages();
+  // CSP nonce injected by middleware (see /middleware.ts).
+  // Empty fallback only triggers if middleware is bypassed (e.g. tests).
+  const nonce = (await headers()).get('x-nonce') ?? '';
 
   return (
     <html
@@ -40,13 +54,16 @@ export default async function RootLayout({
       suppressHydrationWarning
     >
       <head>
-        <script dangerouslySetInnerHTML={{ __html: themeBootScript }} />
+        <script
+          nonce={nonce}
+          dangerouslySetInnerHTML={{ __html: themeBootScript }}
+          suppressHydrationWarning
+        />
       </head>
       <body className="min-h-full flex flex-col bg-bg text-fg">
         <NextIntlClientProvider locale={locale} messages={messages}>
           <AuthProvider>
-            <AnalyticsBootstrapper />
-            {children}
+            <ToastProvider>{children}</ToastProvider>
           </AuthProvider>
         </NextIntlClientProvider>
       </body>

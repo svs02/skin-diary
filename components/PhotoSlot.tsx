@@ -14,6 +14,8 @@ export function PhotoSlot({
   showRetry = true,
   onPick,
   onRetry,
+  onEmptyClick,
+  onMenuOpen,
 }: {
   angle: Angle;
   state: SlotState;
@@ -22,20 +24,36 @@ export function PhotoSlot({
   showRetry?: boolean;
   onPick: (file: File) => void;
   onRetry?: () => void;
+  onEmptyClick: () => void;
+  /**
+   * Spec §3.3 — filled 상태 우상단 ⋯ 버튼 클릭 시 부모에게 메뉴 열기를 위임.
+   * filled 상태가 아니면 호출되지 않는다 (버튼 자체가 렌더되지 않음).
+   */
+  onMenuOpen?: () => void;
 }) {
   const tAngles = useTranslations('record.angles');
   const tPhotos = useTranslations('record.photos');
+  const tMenu = useTranslations('record.photos.menu');
+  // empty 상태에서만 file picker fallback이 필요. filled 상태에선 hidden input을 두지 않는다 (Spec §3.3).
   const inputRef = useRef<HTMLInputElement | null>(null);
 
   const angleLabel = tAngles(angle);
+  const emptyLabel = tPhotos('emptySlot', { angle: angleLabel });
   const ariaLabel =
-    state === 'filled'
-      ? `${angleLabel} — ${tPhotos('tapToAdd')}`
-      : `${angleLabel} — ${tPhotos('tapToAdd')}`;
+    state === 'empty'
+      ? `${angleLabel} — ${emptyLabel}`
+      : state === 'filled'
+        ? `${angleLabel} — ${tMenu('openAria')}`
+        : `${angleLabel} — ${tPhotos('tapToAdd')}`;
 
   function trigger() {
     if (state === 'uploading') return; // 동시 입력 방지
-    inputRef.current?.click();
+    if (state === 'empty') {
+      onEmptyClick();
+      return;
+    }
+    // Spec §3.3: filled 상태에서 슬롯 자체 tap은 noop.
+    // 교체/삭제는 ⋯ 메뉴 경유. error 상태도 동일 (재시도는 별도 버튼).
   }
 
   function handleChange(e: React.ChangeEvent<HTMLInputElement>) {
@@ -49,6 +67,11 @@ export function PhotoSlot({
     if (state === 'uploading') return;
     if (e.key === 'Enter' || e.key === ' ') {
       e.preventDefault();
+      // filled 상태에서 키보드로 활성화 시 메뉴 열기 — 마우스와 동일 흐름
+      if (state === 'filled') {
+        onMenuOpen?.();
+        return;
+      }
       trigger();
     }
   }
@@ -62,9 +85,9 @@ export function PhotoSlot({
         aria-busy={state === 'uploading' || undefined}
         onClick={trigger}
         onKeyDown={handleKeyDown}
-        className={`relative flex aspect-square cursor-pointer flex-col items-center justify-center overflow-hidden rounded-[14px] text-[11px] font-medium transition-colors ${
+        className={`relative flex aspect-square cursor-pointer flex-col items-center justify-center overflow-hidden rounded-[14px] text-[11px] font-medium transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[color:var(--color-accent)] ${
           state === 'empty'
-            ? 'border border-dashed border-[color:var(--color-border)] bg-surface/40 text-fg-subtle hover:bg-surface-2'
+            ? 'border border-dashed border-[color:var(--color-border-strong)] bg-surface-2 text-[color:var(--color-accent-text)] hover:border-[color:var(--color-accent-dim)]'
             : state === 'error'
               ? 'border border-[color:var(--color-danger,#ef4444)] bg-surface text-fg'
               : 'bg-surface'
@@ -80,10 +103,24 @@ export function PhotoSlot({
           />
         )}
 
+        {state === 'filled' && onMenuOpen && (
+          <button
+            type="button"
+            aria-label={`${angleLabel} — ${tMenu('openAria')}`}
+            onClick={(e) => {
+              e.stopPropagation();
+              onMenuOpen();
+            }}
+            className="absolute right-2 top-2 flex h-7 w-7 items-center justify-center rounded-full bg-surface text-fg-muted shadow-[var(--shadow-raised)] hover:text-fg focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[color:var(--color-accent)]"
+          >
+            <DotsIcon />
+          </button>
+        )}
+
         {state === 'empty' && (
           <>
             <PlusIcon />
-            <span className="mt-1">{tPhotos('tapToAdd')}</span>
+            <span className="mt-1">{emptyLabel}</span>
           </>
         )}
 
@@ -114,16 +151,19 @@ export function PhotoSlot({
           </div>
         )}
 
-        <input
-          ref={inputRef}
-          type="file"
-          accept="image/*"
-          capture="environment"
-          onChange={handleChange}
-          className="hidden"
-          aria-hidden
-          tabIndex={-1}
-        />
+        {/* empty 상태에서만 hidden input 유지. filled 상태에서는 슬롯 자체로 파일 picker를 트리거하지 않는다 (Spec §3.3). */}
+        {state === 'empty' && (
+          <input
+            ref={inputRef}
+            type="file"
+            accept="image/*"
+            capture="environment"
+            onChange={handleChange}
+            className="hidden"
+            aria-hidden
+            tabIndex={-1}
+          />
+        )}
       </div>
       <span className="text-center text-[11px] font-medium text-fg-subtle">
         {angleLabel}
@@ -136,6 +176,22 @@ function PlusIcon() {
   return (
     <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" aria-hidden>
       <path d="M12 5v14M5 12h14" />
+    </svg>
+  );
+}
+
+function DotsIcon() {
+  return (
+    <svg
+      width="16"
+      height="16"
+      viewBox="0 0 24 24"
+      fill="currentColor"
+      aria-hidden
+    >
+      <circle cx="5" cy="12" r="1.8" />
+      <circle cx="12" cy="12" r="1.8" />
+      <circle cx="19" cy="12" r="1.8" />
     </svg>
   );
 }

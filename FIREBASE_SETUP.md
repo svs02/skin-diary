@@ -1,5 +1,7 @@
 # Firebase 프로젝트 셋업 가이드
 
+> 실제 Rules는 `firestore.rules` / `storage.rules` 참조 (이 문서의 Rules 블록은 참고용).
+
 이 문서는 Skin Diary가 동작하려면 사용자가 **Firebase 콘솔에서 직접** 해야 하는 일회성 설정을 단계별로 안내한다. 끝까지 마치면 `.env.local`이 채워져 앱이 실제로 로그인/저장까지 동작한다.
 
 소요 시간: 약 10분.
@@ -17,12 +19,10 @@
 1. https://console.firebase.google.com 접속.
 2. **프로젝트 추가** 클릭.
 3. **프로젝트 이름**: `skin-diary-dev` (개발용 권장. 운영용은 나중에 별도 프로젝트로 분리).
-4. **Google Analytics 사용 설정** 토글 ON → 다음 → 기본 GA 계정 선택(없으면 자동 생성) → **프로젝트 만들기**.
+4. **Google Analytics 사용 설정** 토글 OFF → **프로젝트 만들기**. (현재 코드는 GA 미사용. 추후 도입 시 별도 결정.)
 5. 완료 대기.
 
 > 운영 분리 원칙: 실서비스 시작 시 `skin-diary-prod`를 새로 만들어 환경 분리. 본 가이드는 dev만 다룸.
-
-> Analytics는 자동 페이지 뷰 + 향후 커스텀 이벤트(`photo_uploaded`, `record_saved` 등) 기록에 사용. 코드에서 `lib/firebase/analytics.ts`가 SSR-안전 가드와 함께 자동 초기화하므로 환경 변수만 채우면 동작.
 
 ---
 
@@ -141,7 +141,7 @@ service firebase.storage {
 2. **일반** 탭 하단 **앱** 섹션 → **`</>`(웹) 아이콘** 클릭.
 3. 앱 닉네임: `skin-diary-web` (자유).
 4. **Firebase Hosting 사용 안 함** (Vercel 사용 예정).
-5. **앱 등록** → 다음 화면에서 **firebaseConfig 객체**가 표시됨 (Analytics 활성화한 프로젝트는 `measurementId`도 함께 노출):
+5. **앱 등록** → 다음 화면에서 **firebaseConfig 객체**가 표시됨:
    ```js
    const firebaseConfig = {
      apiKey: "AIza...",
@@ -150,7 +150,6 @@ service firebase.storage {
      storageBucket: "skin-diary-dev.appspot.com",
      messagingSenderId: "1234567890",
      appId: "1:1234567890:web:abcdef...",
-     measurementId: "G-XXXXXXXXXX"
    };
    ```
 6. 이 값들을 메모.
@@ -166,7 +165,6 @@ NEXT_PUBLIC_FIREBASE_PROJECT_ID=skin-diary-dev
 NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET=skin-diary-dev.appspot.com
 NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID=1234567890
 NEXT_PUBLIC_FIREBASE_APP_ID=1:1234567890:web:abcdef...
-NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID=G-XXXXXXXXXX              # measurementId (Analytics 활성화 시)
 ```
 
 > ⚠️ `.env.local`은 `.gitignore`에 이미 포함되어 있다 — git 커밋 금지. 노출되어도 Security Rules가 방어선이지만 그래도 굳이 노출하지 말 것.

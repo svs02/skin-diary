@@ -151,7 +151,7 @@ export function CompareView({ fromUrl, toUrl, fromDate, toDate, angle, splitHidd
         onPointerUp={onPointerUpOrCancel}
         onPointerCancel={onPointerUpOrCancel}
         className="relative aspect-square w-full overflow-hidden rounded-[var(--radius-lg)] bg-[color:var(--color-surface)] shadow-[var(--shadow-sm)]"
-        style={{ touchAction: 'none', userSelect: 'none' }}
+        style={{ touchAction: 'pan-y', userSelect: 'none' }}
       >
         {/* From 레이어 (좌측) */}
         <div
