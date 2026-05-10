@@ -30,6 +30,7 @@
   --color-camera-bg:           #0A0A0F;
   --color-camera-guide-oval:   rgba(44, 110, 203, 0.70);
   --color-camera-guide-line:   rgba(255, 210, 50, 0.50);
+  --color-camera-guide-idle:   rgba(44, 110, 203, 0.70); /* AngleGuide idle stroke (alias of guide-oval) */
   --color-camera-check-ok:     #2C6ECB;
   --color-camera-check-warn:   rgba(255, 160, 40, 0.90);
 

@@ -1,4 +1,4 @@
-import type { Metadata } from 'next';
+import type { Metadata, Viewport } from 'next';
 import localFont from 'next/font/local';
 import { headers } from 'next/headers';
 import { NextIntlClientProvider } from 'next-intl';
@@ -21,6 +21,8 @@ export const metadata: Metadata = {
   metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL ?? 'https://skindiary.net'),
   title: 'Skin Diary',
   description: 'Track your skin, one day at a time.',
+  // manifest 라우트는 app/manifest.ts에서 자동 등록됨 — 명시적으로 link 태그 보장
+  manifest: '/manifest.webmanifest',
   icons: {
     icon: [
       { url: '/favicon.svg', type: 'image/svg+xml' },
@@ -30,6 +32,18 @@ export const metadata: Metadata = {
     ],
     apple: [{ url: '/apple-touch-icon.png', sizes: '180x180', type: 'image/png' }],
   },
+};
+
+/**
+ * Viewport / theme-color는 App Router에서 별도 export로 분리한다 (Next 14+).
+ *  - viewport-fit=cover: iOS 노치 안전영역 사용 가능
+ *  - themeColor: PWA 설치 시 상단 바 색상 (manifest의 theme_color와 동일하게 유지)
+ */
+export const viewport: Viewport = {
+  width: 'device-width',
+  initialScale: 1,
+  viewportFit: 'cover',
+  themeColor: '#6DBF8A',
 };
 
 // Runs before React hydration to set <html data-theme> from localStorage,

@@ -1,9 +1,15 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useTranslations } from 'next-intl';
 import { saveDailyRecord, type SaveDailyRecordInput } from '@/lib/firebase/dailyRecord';
 import { isFuture } from '@/lib/utils/dateKey';
+import {
+  clearLifestyleDraft,
+  isDraftFresher,
+  readLifestyleDraft,
+  writeLifestyleDraft,
+} from '@/lib/draft/lifestyleDraft';
 import type { DailyRecord } from '@/types';
 
 type FormValues = SaveDailyRecordInput & {
@@ -44,26 +50,76 @@ export function LifestyleSection({
   const tRecorded = useTranslations('record.recorded');
   const tForm = useTranslations('record.lifestyle');
 
+  const future = isFuture(dateKey);
+
+  // 초기 모드/값 결정 — draft가 Firestore보다 신선하면 draft 적용 + 자동 edit 모드.
+  // draft 조회는 localStorage 동기 호출이라 useState 초기값에서 안전 (typeof window 가드 내장).
+  // 미래 날짜는 draft 로직 자체를 건너뜀.
+  const initial = (() => {
+    const base = valuesFromRecord(record);
+    if (future) return { values: base, fromDraft: false };
+    const draft = readLifestyleDraft(uid, dateKey);
+    if (draft && isDraftFresher(draft, record?.lifestyleSavedAt ?? null)) {
+      return {
+        values: {
+          water: draft.water ?? base.water,
+          food: draft.food ?? base.food,
+          cosmetic: draft.cosmetic ?? base.cosmetic,
+          exercise: draft.exercise ?? base.exercise,
+          memo: draft.memo ?? base.memo,
+        },
+        fromDraft: true,
+      };
+    }
+    return { values: base, fromDraft: false };
+  })();
+
   const [mode, setMode] = useState<'view' | 'edit'>(
-    record?.lifestyleSavedAt ? 'view' : 'edit',
+    initial.fromDraft || !record?.lifestyleSavedAt ? 'edit' : 'view',
   );
-  const [values, setValues] = useState<FormValues>(() => valuesFromRecord(record));
+  const [values, setValues] = useState<FormValues>(initial.values);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  // Debounce 1s — 입력이 잦은 동안에는 마지막 한 번만 직렬화·저장한다.
+  // edit 모드에서 사용자가 실제로 만진 경우에만 작동: hasDirtyRef로 mount 시 1회 호출 차단.
+  const hasDirtyRef = useRef(false);
+  useEffect(() => {
+    if (future) return;
+    if (mode !== 'edit') return;
+    if (!hasDirtyRef.current) {
+      hasDirtyRef.current = true;
+      return;
+    }
+    const id = window.setTimeout(() => {
+      writeLifestyleDraft(uid, dateKey, {
+        water: values.water,
+        food: values.food,
+        cosmetic: values.cosmetic,
+        exercise: values.exercise,
+        memo: values.memo,
+      });
+    }, 1000);
+    return () => window.clearTimeout(id);
+  }, [values, uid, dateKey, mode, future]);
 
   function enterEdit() {
     setValues(valuesFromRecord(record));
     setError(null);
     setMode('edit');
+    // 사용자 명시적 edit — 다음 변경부터 draft 저장 활성화
+    hasDirtyRef.current = false;
   }
 
   async function handleSave() {
     if (saving) return;
-    if (isFuture(dateKey)) return; // CLAUDE.md §5.5 — 호출부 한 번 더 가드
+    if (future) return; // CLAUDE.md §5.5 — 호출부 한 번 더 가드
     setSaving(true);
     setError(null);
     try {
       await saveDailyRecord(uid, dateKey, values);
+      // 정상 저장 직후 draft 제거 — stale 누적 방지
+      clearLifestyleDraft(uid, dateKey);
       await onSaved();
       setMode('view');
     } catch {

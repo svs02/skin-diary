@@ -1,0 +1,113 @@
+name: Firebase Rules
+
+# ----------------------------------------------------------------------------
+# Auto-publish Firestore + Storage security rules to Firebase.
+#
+# Trigger
+#   - Pull request targeting main, when rules / firebase.json changed
+#       → deploy to dev project (skin-diary-ea893)
+#   - Push to main, same path filter
+#       → deploy to prod project (skin-diary-prod)
+#
+# Required secrets (see docs/DEPLOYMENT.md §4)
+#   - FIREBASE_TOKEN_DEV   (firebase login:ci on the dev account)
+#   - FIREBASE_TOKEN_PROD  (firebase login:ci on the prod account)
+#
+# The prod job is gated on FIREBASE_TOKEN_PROD existing — so merging to main
+# before the prod project is provisioned does NOT fail CI. The job appears as
+# skipped instead.
+# ----------------------------------------------------------------------------
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'firestore.rules'
+      - 'storage.rules'
+      - 'firebase.json'
+  push:
+    branches: [main]
+    paths:
+      - 'firestore.rules'
+      - 'storage.rules'
+      - 'firebase.json'
+  workflow_dispatch:
+
+concurrency:
+  # Serialise per environment so back-to-back merges don't race-publish rules.
+  group: firebase-rules-${{ github.ref }}
+  cancel-in-progress: false
+
+env:
+  NODE_VERSION: '20'
+
+jobs:
+  rules-dev:
+    name: Deploy rules to dev (skin-diary-ea893)
+    # Skip on forked-PR runs — secrets are not exposed there.
+    if: >
+      (github.event_name == 'workflow_dispatch') ||
+      (github.event_name == 'pull_request' &&
+       github.event.pull_request.head.repo.full_name == github.repository)
+    runs-on: ubuntu-latest
+    environment: firebase-dev
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+
+      - name: Guard — FIREBASE_TOKEN_DEV must be set
+        env:
+          TOKEN: ${{ secrets.FIREBASE_TOKEN_DEV }}
+        run: |
+          if [ -z "${TOKEN}" ]; then
+            echo "::error::FIREBASE_TOKEN_DEV secret is not set. See docs/DEPLOYMENT.md §4."
+            exit 1
+          fi
+
+      - name: Deploy Firestore + Storage rules (dev)
+        env:
+          FIREBASE_TOKEN: ${{ secrets.FIREBASE_TOKEN_DEV }}
+        run: |
+          npx --yes firebase-tools@latest deploy \
+            --only firestore:rules,storage \
+            --project skin-diary-ea893 \
+            --non-interactive
+
+  rules-prod:
+    name: Deploy rules to prod (skin-diary-prod)
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    environment: firebase-prod
+    steps:
+      - name: Check for FIREBASE_TOKEN_PROD secret
+        id: check
+        env:
+          TOKEN: ${{ secrets.FIREBASE_TOKEN_PROD }}
+        run: |
+          if [ -z "${TOKEN}" ]; then
+            echo "FIREBASE_TOKEN_PROD not set — skipping prod rule deploy."
+            echo "skip=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "skip=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - uses: actions/checkout@v4
+        if: steps.check.outputs.skip == 'false'
+
+      - uses: actions/setup-node@v4
+        if: steps.check.outputs.skip == 'false'
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+
+      - name: Deploy Firestore + Storage rules (prod)
+        if: steps.check.outputs.skip == 'false'
+        env:
+          FIREBASE_TOKEN: ${{ secrets.FIREBASE_TOKEN_PROD }}
+        run: |
+          npx --yes firebase-tools@latest deploy \
+            --only firestore:rules,storage \
+            --project skin-diary-prod \
+            --non-interactive

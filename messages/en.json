@@ -125,7 +125,11 @@
         },
         "deniedPermanent": {
           "title": "Open browser settings",
-          "body": "Lock icon · Camera · Allow"
+          "body": "Lock icon · Camera · Allow",
+          "ios": "Settings > Safari > Camera > Allow",
+          "android": "Lock icon in address bar > Permissions > Camera > Allow",
+          "desktop": "Lock icon in address bar > Site settings > Camera > Allow",
+          "unknown": "Lock icon · Camera · Allow"
         }
       },
       "angle": {
@@ -183,6 +187,22 @@
     "account": {
       "title": "Account",
       "signOut": "Sign out"
+    },
+    "data": {
+      "delete": {
+        "button": "Delete account",
+        "confirmTitle": "Delete your account?",
+        "confirmDescription": "All records and photos will be permanently deleted. This cannot be undone.",
+        "typeToConfirm": "Type 'DELETE' to confirm",
+        "continue": "Continue",
+        "cancel": "Cancel",
+        "reauthTitle": "Verify it's you",
+        "reauthPasswordLabel": "Password",
+        "reauthGoogle": "Re-verify with Google",
+        "reauthError": "Verification failed. Please try again.",
+        "success": "Your account has been deleted",
+        "error": "Something went wrong while deleting. Please try again later."
+      }
     }
   },
   "language": {
@@ -374,7 +394,7 @@
         "Only you can open it (enforced by Firebase Security Rules)",
         "Location data (EXIF) is stripped before upload",
         "Photos are normalized to 1:1 square",
-        "You can export or delete any time"
+        "You can delete any time"
       ],
       "moreLink": "Read the privacy policy"
     },
@@ -398,7 +418,7 @@
           "We only store your email, account ID, and the photos and notes you upload",
           "Only you can open your data — we never share it or use it for training",
           "Photos are stripped of EXIF location data and normalized to 1:1 square before upload",
-          "You can export or delete your data any time"
+          "You can delete your data any time"
         ]
       },
       "sections": [
@@ -420,7 +440,7 @@
         },
         {
           "title": "5. Your rights",
-          "body": "You can exercise the following rights at any time.\n\n- Access and export: download your data from the Settings screen\n- Correction: edit each day's record directly\n- Deletion: remove individual records or delete your account to erase all data permanently"
+          "body": "You can exercise the following rights at any time.\n\n- Access: view your records and photos directly in the app\n- Correction: edit each day's record directly\n- Deletion: remove individual records or delete your account to erase all data permanently"
         },
         {
           "title": "6. Cookies and local storage",
@@ -475,7 +495,7 @@
         },
         {
           "title": "6. Availability and termination",
-          "body": "Skin Diary is a beta service operated by a single maker. The service may pause or end without prior notice due to maintenance, technical issues, or operational reasons. If we sunset the service, we will give at least 30 days' notice and a data-export window."
+          "body": "Skin Diary is a beta service operated by a single maker. The service may pause or end without prior notice due to maintenance, technical issues, or operational reasons. If we sunset the service, we will give at least 30 days' notice so you can review or delete your records during that window."
         },
         {
           "title": "7. Disclaimer",

@@ -28,6 +28,14 @@ function anglePath(uid: string, dateKey: string, angle: Angle): string {
  *  - dateKey 형식 검증 (Storage Rules와 동일 규약)
  *  - 미래 날짜 차단 (CLAUDE.md §5.5; Rules는 형식만 검증하므로 클라가 책임)
  *  - 500KB 상한 (Rules의 후위 가드와 일치, 실패 시 명확한 에러 노출)
+ *
+ * TODO(Spec §4.3.c, retry-pending toast):
+ *  실패 시 자동 재시도 큐를 도입할 때, 호출부에서 다음 형태로 토스트를 운용한다.
+ *    const toast = useToast();
+ *    const id = toast.retryPending(t('record.photos.toast.failed'));
+ *    try { await uploadAnglePhoto(...); toast.dismiss(id); toast.success(...); }
+ *    catch { /* keep retry-pending until queue exhausted, then dismiss + alert *\/ }
+ *  본 함수 자체는 토스트와 비결합 — 호출부(CaptureShell, PhotoCapture)에서 처리한다.
  */
 export async function uploadAnglePhoto(
   uid: string,

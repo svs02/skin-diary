@@ -13,10 +13,26 @@ import { normalizeToSquareJpeg } from '@/lib/image/normalize';
 import { uploadAnglePhoto } from '@/lib/storage/upload';
 import { markPhotoUploaded } from '@/lib/firebase/dailyRecord';
 import { useToast } from '@/lib/toast';
+import { detectPlatform, type Platform } from '@/lib/utils/userAgent';
 import type { Angle } from '@/types';
 import { AngleGuide } from './AngleGuide';
 
 const ANGLES: Angle[] = ['front', 'left', 'right'];
+
+// next-intl messages 키와 detectPlatform 결과 매핑.
+// 'unknown' 분기까지 명시 키로 잡아 fallback 카피를 보장 (Spec §4.1).
+function platformKey(p: Platform): 'ios' | 'android' | 'desktop' | 'unknown' {
+  switch (p) {
+    case 'ios-safari':
+      return 'ios';
+    case 'android-chrome':
+      return 'android';
+    case 'desktop':
+      return 'desktop';
+    default:
+      return 'unknown';
+  }
+}
 
 type Phase =
   | 'checking'
@@ -61,6 +77,7 @@ export function CaptureShell({
   const tAngles = useTranslations('record.capture.angle');
 
   const [phase, setPhase] = useState<Phase>('checking');
+  const [platform, setPlatform] = useState<Platform>('unknown');
   const [deniedCount, setDeniedCount] = useState(0);
   const [facingMode, setFacingMode] = useState<'environment' | 'user'>('environment');
   const [hasMultipleCameras, setHasMultipleCameras] = useState(false);
@@ -252,6 +269,12 @@ export function CaptureShell({
     return () => {
       document.body.style.overflow = prev;
     };
+  }, []);
+
+  // 플랫폼 감지 (denied-permanent 카피 분기용, Spec §4.1).
+  // SSR 회피를 위해 mount 후 1회 결정.
+  useEffect(() => {
+    setPlatform(detectPlatform());
   }, []);
 
   // visibilitychange — 백그라운드 시 stream stop (배터리/권한)
@@ -458,7 +481,7 @@ export function CaptureShell({
       {phase === 'denied-permanent' && (
         <PermissionCard
           title={t('permission.deniedPermanent.title')}
-          body={t('permission.deniedPermanent.body')}
+          body={t(`permission.deniedPermanent.${platformKey(platform)}`)}
           secondaryLabel={t('permission.gallery')}
           onSecondary={openGallery}
           onClose={() => router.back()}
@@ -504,8 +527,8 @@ export function CaptureShell({
             }}
           />
 
-          {/* AngleGuide 오버레이 */}
-          {!preview && <AngleGuide angle={angle} />}
+          {/* AngleGuide 오버레이 — 정렬 검증 알고리즘 도입 전까지 idle 고정 (Spec §2.3) */}
+          {!preview && <AngleGuide angle={angle} state="idle" />}
 
           {/* preview freeze layer */}
           {preview && (
