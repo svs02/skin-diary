@@ -168,10 +168,10 @@ function DayCell({
     return (
       <div
         aria-disabled="true"
-        className={`${base} cursor-not-allowed text-fg-subtle/50`}
+        className={`${base} cursor-not-allowed text-fg-subtle ${dim ? 'opacity-40' : ''}`}
         title={futureLabel}
       >
-        <span className={dim ? 'opacity-40' : 'opacity-60'}>{cell.day}</span>
+        <span>{cell.day}</span>
         <span className="sr-only">{futureLabel}</span>
       </div>
     );

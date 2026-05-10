@@ -12,6 +12,11 @@ const nextConfig: NextConfig = {
       { protocol: 'https', hostname: 'firebasestorage.googleapis.com' },
     ],
   },
+  async redirects() {
+    return [
+      { source: '/security', destination: '/privacy', permanent: true },
+    ];
+  },
 };
 
 export default withNextIntl(nextConfig);

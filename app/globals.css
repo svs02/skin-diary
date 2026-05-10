@@ -1,78 +1,94 @@
 @import "tailwindcss";
 
 /* ─────────────────────────────────────────
-   Skin Diary Design Tokens
+   Skin Diary Design Tokens — Apple.ca mood
    Source: handoff/tokens/colors.css
 ───────────────────────────────────────── */
 
 :root {
-  --color-bg:         #F2F5FA;
+  --color-bg:         #FBFBFD;
   --color-surface:    #FFFFFF;
-  --color-surface-2:  #EDF0F7;
-  --color-surface-3:  #E0E6F0;
+  --color-surface-2:  #F5F5F7;
+  --color-surface-3:  #E8E8ED;
 
-  --color-fg:         #18202E;
-  --color-fg-muted:   #5A6378;
-  --color-fg-subtle:  #9BA3BC;
+  --color-fg:         #1D1D1F;
+  --color-fg-muted:   #6E6E73;
+  --color-fg-subtle:  #A1A1A6;
 
-  --color-accent:      #6DBF8A;
-  --color-accent-dim:  #DCF0E5;
-  --color-accent-text: #26694A;
+  --color-accent:      #2C6ECB;
+  --color-accent-dim:  #E8F0FB;
+  --color-accent-text: #1F4E94;
 
-  --color-border:  rgba(80, 110, 170, 0.10);
-  --color-nav-bg:  rgba(255, 255, 255, 0.95);
+  --color-border:        rgba(0, 0, 0, 0.08);
+  --color-border-strong: rgba(0, 0, 0, 0.14);
+  --color-nav-bg:        rgba(251, 251, 253, 0.72);
 
   --color-camera-bg:           #0A0A0F;
-  --color-camera-guide-oval:   rgba(114, 201, 142, 0.70);
+  --color-camera-guide-oval:   rgba(44, 110, 203, 0.70);
   --color-camera-guide-line:   rgba(255, 210, 50, 0.50);
-  --color-camera-check-ok:     #72C98E;
+  --color-camera-check-ok:     #2C6ECB;
   --color-camera-check-warn:   rgba(255, 160, 40, 0.90);
 
-  --shadow-sm: 0 2px 12px rgba(20, 35, 70, 0.07);
-  --shadow-lg: 0 8px 32px rgba(20, 35, 70, 0.10);
+  --shadow-sm: none;
+  --shadow-raised: 0 1px 2px rgba(0, 0, 0, 0.04), 0 4px 16px rgba(0, 0, 0, 0.06);
+  --shadow-lg: 0 20px 48px rgba(0, 0, 0, 0.18);
+
+  /* Motion — exposed as raw custom properties so components can use var(--ease-*) directly */
+  --ease-standard: cubic-bezier(0.32, 0.72, 0, 1);
+  --ease-emphasis: cubic-bezier(0.2, 0, 0, 1);
+  --ease-exit:     cubic-bezier(0.4, 0, 1, 1);
+
+  --duration-micro: 120ms;
+  --duration-base:  220ms;
+  --duration-enter: 280ms;
+  --duration-exit:  200ms;
 }
 
 [data-theme="dark"] {
-  --color-bg:         #0C0F1A;
-  --color-surface:    #141826;
-  --color-surface-2:  #1B2135;
-  --color-surface-3:  #232C42;
+  --color-bg:         #000000;
+  --color-surface:    #1C1C1E;
+  --color-surface-2:  #2C2C2E;
+  --color-surface-3:  #3A3A3C;
 
-  --color-fg:         #EEF2FA;
-  --color-fg-muted:   #8890AA;
-  --color-fg-subtle:  #44506A;
+  --color-fg:         #F5F5F7;
+  --color-fg-muted:   #98989D;
+  --color-fg-subtle:  #636366;
 
-  --color-accent:      #72C98E;
-  --color-accent-dim:  #162B22;
-  --color-accent-text: #72C98E;
+  --color-accent:      #4A8FE8;
+  --color-accent-dim:  #122844;
+  --color-accent-text: #8FB6F0;
 
-  --color-border:  rgba(100, 140, 220, 0.07);
-  --color-nav-bg:  rgba(20, 24, 38, 0.97);
+  --color-border:        rgba(255, 255, 255, 0.10);
+  --color-border-strong: rgba(255, 255, 255, 0.18);
+  --color-nav-bg:        rgba(28, 28, 30, 0.72);
 
-  --shadow-sm: 0 2px 12px rgba(0, 0, 0, 0.25);
-  --shadow-lg: 0 8px 40px rgba(0, 0, 0, 0.35);
+  --shadow-sm: none;
+  --shadow-raised: 0 1px 2px rgba(0, 0, 0, 0.30), 0 4px 16px rgba(0, 0, 0, 0.40);
+  --shadow-lg: 0 20px 48px rgba(0, 0, 0, 0.55);
 }
 
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme]) {
-    --color-bg:         #0C0F1A;
-    --color-surface:    #141826;
-    --color-surface-2:  #1B2135;
-    --color-surface-3:  #232C42;
+    --color-bg:         #000000;
+    --color-surface:    #1C1C1E;
+    --color-surface-2:  #2C2C2E;
+    --color-surface-3:  #3A3A3C;
 
-    --color-fg:         #EEF2FA;
-    --color-fg-muted:   #8890AA;
-    --color-fg-subtle:  #44506A;
+    --color-fg:         #F5F5F7;
+    --color-fg-muted:   #98989D;
+    --color-fg-subtle:  #636366;
 
-    --color-accent:      #72C98E;
-    --color-accent-dim:  #162B22;
-    --color-accent-text: #72C98E;
+    --color-accent:      #4A8FE8;
+    --color-accent-dim:  #122844;
+    --color-accent-text: #8FB6F0;
 
-    --color-border:  rgba(100, 140, 220, 0.07);
-    --color-nav-bg:  rgba(20, 24, 38, 0.97);
+    --color-border:        rgba(255, 255, 255, 0.10);
+    --color-border-strong: rgba(255, 255, 255, 0.18);
+    --color-nav-bg:        rgba(28, 28, 30, 0.72);
 
-    --shadow-sm: 0 2px 12px rgba(0, 0, 0, 0.25);
-    --shadow-lg: 0 8px 40px rgba(0, 0, 0, 0.35);
+    --shadow-sm: none;
+    --shadow-raised: 0 1px 2px rgba(0, 0, 0, 0.30), 0 4px 16px rgba(0, 0, 0, 0.40);
+    --shadow-lg: 0 20px 48px rgba(0, 0, 0, 0.55);
   }
 }
 
@@ -87,26 +103,69 @@
   --color-accent:       var(--color-accent);
   --color-accent-dim:   var(--color-accent-dim);
   --color-accent-text:  var(--color-accent-text);
-  --color-border:       var(--color-border);
+  --color-border:        var(--color-border);
+  --color-border-strong: var(--color-border-strong);
   --color-nav-bg:       var(--color-nav-bg);
 
-  --font-display: var(--font-dm-sans), 'DM Sans', sans-serif;
-  --font-body:    var(--font-noto-sans-kr), 'Noto Sans KR', sans-serif;
+  --font-display: var(--font-pretendard), 'Pretendard Variable', 'Pretendard', -apple-system, 'SF Pro Display', 'SF Pro KR', system-ui, sans-serif;
+  --font-body:    var(--font-pretendard), 'Pretendard Variable', 'Pretendard', -apple-system, 'SF Pro Text', 'SF Pro KR', system-ui, sans-serif;
 
-  /* Typography — display tier (정량 hero 보조)
-     사용처: Streak Hero (Overview), Compare 정량 hero 보조. 일반 헤딩에 사용 금지. */
-  --text-display-md: 40px;
-  --text-display-md--line-height: 1.05;
-  --text-display-md--letter-spacing: -1.5px;
-  --text-display-md--font-weight: 700;
+  /* Typography — Apple.ca scale (한국어 우선) */
+  --text-hero: 44px;
+  --text-hero--line-height: 1.08;
+  --text-hero--letter-spacing: -0.022em;
+  --text-hero--font-weight: 700;
 
-  --radius-sm: 8px;
-  --radius-md: 12px;
-  --radius-lg: 18px;
-  --radius-xl: 22px;
+  --text-display: 32px;
+  --text-display--line-height: 1.12;
+  --text-display--letter-spacing: -0.02em;
+  --text-display--font-weight: 600;
 
-  --shadow-sm: var(--shadow-sm);
-  --shadow-lg: var(--shadow-lg);
+  --text-title: 22px;
+  --text-title--line-height: 1.27;
+  --text-title--letter-spacing: -0.01em;
+  --text-title--font-weight: 600;
+
+  --text-body: 16px;
+  --text-body--line-height: 1.6;
+  --text-body--letter-spacing: -0.003em;
+  --text-body--font-weight: 400;
+
+  --text-caption: 13px;
+  --text-caption--line-height: 1.5;
+  --text-caption--letter-spacing: 0;
+  --text-caption--font-weight: 400;
+
+  --text-streak-hero: 56px;
+  --text-streak-hero--line-height: 1;
+  --text-streak-hero--letter-spacing: -0.024em;
+  --text-streak-hero--font-weight: 700;
+
+  --text-streak-empty: 32px;
+  --text-streak-empty--line-height: 1.05;
+  --text-streak-empty--letter-spacing: -0.018em;
+  --text-streak-empty--font-weight: 700;
+
+  /* Spacing — 4pt grid */
+  --spacing-1:  4px;
+  --spacing-2:  8px;
+  --spacing-3:  12px;
+  --spacing-4:  16px;
+  --spacing-5:  20px;
+  --spacing-6:  24px;
+  --spacing-8:  32px;
+  --spacing-10: 40px;
+  --spacing-12: 48px;
+
+  --radius-sm:   8px;
+  --radius-md:   12px;
+  --radius-lg:   16px;
+  --radius-xl:   20px;
+  --radius-full: 9999px;
+
+  --shadow-sm:     var(--shadow-sm);
+  --shadow-raised: var(--shadow-raised);
+  --shadow-lg:     var(--shadow-lg);
 }
 
 html, body {
@@ -121,6 +180,20 @@ html, body {
 }
 
 body {
-  font-family: var(--font-noto-sans-kr), 'Noto Sans KR', system-ui, sans-serif;
+  font-family: var(--font-pretendard), 'Pretendard Variable', 'Pretendard', -apple-system, 'SF Pro Text', 'SF Pro KR', system-ui, sans-serif;
   -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+/* Compare 페이지 segmented control thumb shadow (다크에서 강한 분리감) */
+.compare-vm-thumb {
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.06);
+}
+[data-theme="dark"] .compare-vm-thumb {
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.4);
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme]) .compare-vm-thumb {
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.4);
+  }
 }

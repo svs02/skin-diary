@@ -1,21 +1,19 @@
 import type { Metadata } from 'next';
-import { DM_Sans, Noto_Sans_KR } from 'next/font/google';
+import localFont from 'next/font/local';
 import { NextIntlClientProvider } from 'next-intl';
 import { getLocale, getMessages } from 'next-intl/server';
 import { AuthProvider } from '@/lib/auth/AuthProvider';
 import { AnalyticsBootstrapper } from '@/components/AnalyticsBootstrapper';
 import './globals.css';
 
-const dmSans = DM_Sans({
-  variable: '--font-dm-sans',
-  subsets: ['latin'],
-  weight: ['400', '500', '700'],
-});
-
-const notoSansKr = Noto_Sans_KR({
-  variable: '--font-noto-sans-kr',
-  subsets: ['latin'],
-  weight: ['300', '400', '500', '700'],
+// Pretendard Variable — single woff2 covering 100..900 weights.
+// Self-hosted under /public/fonts to avoid CDN dependency.
+const pretendard = localFont({
+  src: '../public/fonts/PretendardVariable.woff2',
+  variable: '--font-pretendard',
+  weight: '100 900',
+  style: 'normal',
+  display: 'swap',
 });
 
 export const metadata: Metadata = {
@@ -38,7 +36,7 @@ export default async function RootLayout({
   return (
     <html
       lang={locale}
-      className={`${dmSans.variable} ${notoSansKr.variable} h-full antialiased`}
+      className={`${pretendard.variable} h-full antialiased`}
       suppressHydrationWarning
     >
       <head>

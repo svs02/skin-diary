@@ -45,7 +45,11 @@ export function PhotoCapture({
   imageUrlsRef.current = imageUrls;
 
   useEffect(() => {
-    let cancelled = false;
+    // cancelled 플래그를 두지 않는다. Strict Mode에서 cleanup→rerun 사이에
+    // cancelled=true가 되어 첫 fetch 결과가 버려지고, 두 번째 effect run은
+    // inflightRef 때문에 skip → imageUrls가 영구히 비어 'uploading'에 갇힘.
+    // setState는 idempotent하고 dateKey 변경은 부모의 key prop으로 remount되므로
+    // 여기서 stale write 위험은 없다.
     for (const angle of ANGLES) {
       if (!photos[angle]) continue;
       if (imageUrlsRef.current[angle]) continue; // 이미 URL 보유
@@ -54,13 +58,11 @@ export function PhotoCapture({
       getAngleDownloadURL(uid, dateKey, angle)
         .then((url) => {
           inflightRef.current.delete(angle);
-          if (cancelled) return;
           setImageUrls((p) => ({ ...p, [angle]: url }));
         })
         .catch((err: unknown) => {
           inflightRef.current.delete(angle);
           console.error('[PhotoCapture] URL fetch failed', { angle, dateKey, err });
-          if (cancelled) return;
           const code =
             err instanceof FirebaseError
               ? err.code
@@ -77,9 +79,6 @@ export function PhotoCapture({
           }));
         });
     }
-    return () => {
-      cancelled = true;
-    };
   }, [uid, dateKey, photos]);
 
   const runUpload = useCallback(

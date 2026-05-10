@@ -28,7 +28,8 @@
       "toggleToSignIn": "Have an account? Sign in",
       "errorGeneric": "Something went wrong. Please try again.",
       "errorInvalidCredentials": "Invalid email or password.",
-      "errorEmailInUse": "That email is already in use."
+      "errorEmailInUse": "This email is already registered.",
+      "switchToSignInCta": "Go to sign in"
     }
   },
   "record": {
@@ -124,40 +125,56 @@
       "night": "Have a peaceful night"
     },
     "streak": {
-      "unitDays": "{n, plural, =0 {Just getting started} one {# day} other {# days}}",
-      "loadedCaption": "on a streak",
-      "emptyCaption": "Waiting for your first entry"
+      "unitDays": "{n, plural, other {#}}",
+      "unitLabel": " days",
+      "emptyHeadline": "Start today"
     },
     "dot21": {
       "title": "Last 21 days"
     },
+    "weekChips": {
+      "title": "This week",
+      "fraction": "{done}/7",
+      "weekdaysShort": [
+        "M",
+        "T",
+        "W",
+        "T",
+        "F",
+        "S",
+        "S"
+      ]
+    },
     "today": {
-      "labelOverline": "TODAY",
-      "bodyEmptyFirstTime": "Want to start today?",
-      "bodyEmpty": "Not captured yet",
-      "bodyPartial": "Pick up where you left off?",
-      "bodyDone": "Today's entry complete",
-      "ctaPrimary": "Record today",
-      "ctaSecondary": "View today's entry",
-      "ctaSubtitle": "You can save without photos"
+      "ctaPrimary": "Log today",
+      "ctaSecondary": "View today's log",
+      "ctaSubtitle": "You can save without a photo"
+    },
+    "hero": {
+      "emptyPhotoHint": "Drop your first photo"
     },
     "recent": {
-      "title": "Recent photos",
-      "viewAll": "View all"
+      "title": "Recent",
+      "viewAll": "See all"
     },
     "compare": {
-      "title": "Compare with {n, plural, one {# day} other {# days}} ago",
-      "cta": "See the change"
+      "eyebrow": "In 30 days",
+      "title": "See how things changed",
+      "thenLabel": "{n}d ago · {date}",
+      "nowLabel": "Today · {date}",
+      "cta": "View comparison"
     },
     "stats": {
-      "monthly": "{n} days this month · most often {habit}"
+      "monthly": "This month",
+      "monthlyDays": "{n} days logged",
+      "monthlyHabit": "mostly {habit}"
     },
     "tip": {
-      "title": "Tips",
-      "item1": "Capture in similar light each day",
-      "item2": "A one-line note is enough",
-      "item3": "Compare unlocks after 30 days",
-      "dismiss": "Got it"
+      "title": "Consistency is what helps most",
+      "item1": "Shoot at the same time, same light",
+      "item2": "Missed a day? Pick it back up tomorrow",
+      "item3": "Comparison unlocks after 7 days",
+      "dismiss": "Dismiss tip"
     }
   },
   "compare": {
@@ -212,8 +229,192 @@
     "live": {
       "ratio": "A {a}% · B {b}%"
     },
+    "viewMode": {
+      "slider": "Overlay",
+      "sideBySide": "Side by side",
+      "toggle": "View mode"
+    },
     "error": {
       "future": "Future dates can't be compared"
+    }
+  },
+  "marketing": {
+    "meta": {
+      "title": "Skin Diary — Track your skin, one day at a time.",
+      "description": "A simple skin diary. Front, left, right photos with a short note. No AI. Only you can open it."
+    },
+    "nav": {
+      "logo": "Skin Diary",
+      "signIn": "Sign in"
+    },
+    "hero": {
+      "headline": "Track your skin, one day at a time.",
+      "subhead": "Front, left, right photos and a short note. That's all.",
+      "ctaPrimary": "Start your diary",
+      "demoLabels": {
+        "front": "Front",
+        "left": "Left",
+        "right": "Right"
+      }
+    },
+    "what": {
+      "title": "Photos and notes",
+      "items": [
+        "Three photos (1:1 square)",
+        "A single line of habits",
+        "Change shows up on calendar and slider"
+      ],
+      "endNote": "No AI diagnosis. No score. Just your record."
+    },
+    "compareDemo": {
+      "title": "See the change",
+      "hint": "Drag, or use the arrow keys"
+    },
+    "how": {
+      "title": "Three steps",
+      "step1": {
+        "label": "Capture",
+        "body": "Front, left, right — squared to 1:1"
+      },
+      "step2": {
+        "label": "Note",
+        "body": "Water, meals, products, movement, notes — all optional"
+      },
+      "step3": {
+        "label": "Compare",
+        "body": "Slide two days over each other"
+      }
+    },
+    "why": {
+      "title": "Different from a photo album",
+      "items": [
+        "Lined up by angle",
+        "Each day becomes a dot on the calendar",
+        "Slide today over a month ago"
+      ]
+    },
+    "privacy": {
+      "title": "Only you can see it",
+      "items": [
+        "Only you can open it (enforced by Firebase Security Rules)",
+        "Location data (EXIF) is stripped before upload",
+        "Photos are normalized to 1:1 square",
+        "You can export or delete any time"
+      ],
+      "moreLink": "Read the privacy policy"
+    },
+    "cta": {
+      "title": "One photo a day is enough."
+    },
+    "footer": {
+      "makerNote": "Built because I wanted to use it myself. :)",
+      "privacy": "Privacy",
+      "terms": "Terms",
+      "copyright": "© 2026 Skin Diary"
+    }
+  },
+  "legal": {
+    "privacy": {
+      "title": "Privacy Policy",
+      "lastUpdated": "Last updated: 2026-05-09",
+      "summary": {
+        "title": "At a glance",
+        "items": [
+          "We only store your email, account ID, and the photos and notes you upload",
+          "Only you can open your data — we never share it or use it for training",
+          "Photos are stripped of EXIF location data and normalized to 1:1 square before upload",
+          "You can export or delete your data any time"
+        ]
+      },
+      "sections": [
+        {
+          "title": "1. Information we collect",
+          "body": "Skin Diary collects the following information.\n\n- Account: email address, authentication identifier (uid), and sign-in method (Google or email/password)\n- User content: face photos you upload (front, left, right) and lifestyle notes (water, food, products, exercise, memo)\n- Automatic: login session and in-progress draft data in localStorage. We do not collect ad identifiers or location."
+        },
+        {
+          "title": "2. How we use it",
+          "body": "We use the information solely to preserve and compare your own skin diary. We do not use it for any of the following.\n\n- Training AI or machine-learning models\n- Advertising or behavioral analytics\n- Selling or sharing data with third parties"
+        },
+        {
+          "title": "3. Storage and retention",
+          "body": "Data is stored on Google Firebase (Firebase Authentication, Cloud Firestore, and Cloud Storage). When you delete your account or an individual record, the data is permanently removed. Any residual copies on backup media are rotated out within 30 days."
+        },
+        {
+          "title": "4. Third parties and processors",
+          "body": "We do not sell or share your data with third parties. We use Google LLC (Firebase) as our infrastructure processor. Google OAuth is used only to authenticate sign-in; we do not transmit user content to Google."
+        },
+        {
+          "title": "5. Your rights",
+          "body": "You can exercise the following rights at any time.\n\n- Access and export: download your data from the Settings screen\n- Correction: edit each day's record directly\n- Deletion: remove individual records or delete your account to erase all data permanently"
+        },
+        {
+          "title": "6. Cookies and local storage",
+          "body": "We use the browser's localStorage and cookies to keep you signed in and to preserve in-progress drafts. We do not use external trackers for advertising or behavioral analytics. You can clear this storage from your browser settings."
+        },
+        {
+          "title": "7. Children",
+          "body": "Users under 14 cannot register without verifiable parental consent. If we learn that a minor's information was collected without consent, we will delete it immediately."
+        },
+        {
+          "title": "8. Changes to this policy",
+          "body": "If we make material changes to this policy, we will notify you in-app or by email at least 7 days before they take effect. Continuing to use the service after changes means you accept the updated policy."
+        },
+        {
+          "title": "9. Contact",
+          "body": "For privacy questions, contact [maker email]. Skin Diary is a beta service run by a single maker, so replies may take a few days."
+        }
+      ]
+    },
+    "terms": {
+      "title": "Terms of Service",
+      "lastUpdated": "Last updated: 2026-05-09",
+      "summary": {
+        "title": "At a glance",
+        "items": [
+          "Skin Diary is a personal record-keeping tool — it is not medical diagnosis or advice",
+          "You own 100% of the photos and notes you upload",
+          "It's a beta service run by a single maker; pauses or changes can happen",
+          "Uploading other people's photos without consent or any inappropriate content is not allowed"
+        ]
+      },
+      "sections": [
+        {
+          "title": "1. The service",
+          "body": "Skin Diary (the \"Service\") is a personal record-keeping tool that helps you store and compare your face photos and lifestyle notes over time. It does not provide medical diagnosis, treatment, or prescription, and it is not a substitute for professional medical advice."
+        },
+        {
+          "title": "2. Acceptance and changes",
+          "body": "These terms take effect when you complete sign-up. We will give you in-app notice at least 7 days before changes take effect (30 days for changes that disadvantage you). If you do not agree to the changes, you can stop using the service by deleting your account."
+        },
+        {
+          "title": "3. Your account",
+          "body": "You are responsible for keeping your account credentials (password, OAuth session) secure. You are responsible for activity under your account. If you suspect unauthorized access, change your password immediately and let the maker know."
+        },
+        {
+          "title": "4. Content ownership",
+          "body": "You retain full copyright and ownership of the photos and notes you upload. The maker processes your content only as needed to provide the service (storage, display, image normalization) and does not use it for any other purpose."
+        },
+        {
+          "title": "5. Prohibited use",
+          "body": "The following are not allowed.\n\n- Uploading another person's photo or information without their consent\n- Uploading inappropriate content such as sexual or violent imagery\n- Abnormal access to the service (bots, exploiting vulnerabilities)\n- Selling or supplying the service's output to third parties as medical evidence"
+        },
+        {
+          "title": "6. Availability and termination",
+          "body": "Skin Diary is a beta service operated by a single maker. The service may pause or end without prior notice due to maintenance, technical issues, or operational reasons. If we sunset the service, we will give at least 30 days' notice and a data-export window."
+        },
+        {
+          "title": "7. Disclaimer",
+          "body": "Skin Diary is solely a tool for storing and comparing your own records. Nothing visible in your photos or notes constitutes medical evidence. Decisions about your skin (visiting a clinic, choosing treatments or products) are your own responsibility, and the maker is not liable for outcomes."
+        },
+        {
+          "title": "8. Governing law",
+          "body": "These terms are governed by the laws of the Republic of Korea. We will try to resolve disputes in good faith first; if that fails, the court of the user's domicile will be the first-instance court."
+        },
+        {
+          "title": "9. Contact",
+          "body": "For questions about these terms, contact [maker email]."
+        }
+      ]
     }
   }
 }

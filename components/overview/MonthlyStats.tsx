@@ -8,22 +8,26 @@ import { getDailyRecord, listRecordKeysInRange } from '@/lib/firebase/dailyRecor
 import { todayKey } from '@/lib/utils/dateKey';
 
 /**
- * 월간 스탯 — Streak ≥ 30일에서만 노출.
+ * Monthly stats — Streak ≥ 30일에서만 노출.
+ * 한 줄 인라인: 「이번 달 · {n}일 기록 · 가장 자주 {habit}」
+ *  - 가운데 세그먼트(`{n}일 기록`)는 accent weight 600 tabular.
+ *  - separator는 3px subtle round dot.
  *
- * 데이터:
- *  - 이번 달 기록 수: listRecordKeysInRange(month-start, next-month-start)
- *  - 가장 자주 한 라이프스타일 항목: 이번 달 기록의 mode (water>0 / food / cosmetic / exercise)
- *
- * Lazy fetch — 30일 게이트 통과 사용자에게만 추가 쿼리.
- *
- * 단순화: 이번 달 record 문서들만 추가로 읽어서 빈도 집계.
- *  - record 수가 30개를 넘기 어려운 도메인이라 비용 무시 가능.
+ * 카드 박스 없음 — 부모 MetaInlineBlock가 surface 제공.
  */
 
 type HabitKey = 'water' | 'food' | 'cosmetic' | 'exercise';
 
+function SubtleDot() {
+  return (
+    <span
+      aria-hidden
+      className="inline-block h-[3px] w-[3px] shrink-0 rounded-full bg-[color:var(--color-fg-subtle)]"
+    />
+  );
+}
+
 function monthBounds(today: string): { start: string; endExclusive: string } {
-  // 'YYYY-MM-DD'에서 첫 7자리 = 'YYYY-MM' → 'YYYY-MM-01'
   const ym = today.slice(0, 7);
   const start = `${ym}-01`;
   const [y, m] = ym.split('-').map(Number);
@@ -54,7 +58,6 @@ export function MonthlyStats() {
       if (cancelled) return;
       setCount(items.length);
 
-      // 빈도 집계 — 각 record의 라이프스타일 필드 존재 여부.
       const records = await Promise.all(
         items.map((i) => getDailyRecord(user.uid, i.date)),
       );
@@ -88,16 +91,24 @@ export function MonthlyStats() {
   }, [enabled, user]);
 
   if (!enabled) return null;
-  if (count === null) return null; // 로딩 중에는 공간 차지 X (게이트 통과 사용자 한정 — CLS 영향 미미)
+  if (count === null) return null;
 
   const habitLabel = mode ? tHabits(mode as 'water' | 'food' | 'cosmetic' | 'exercise') : '—';
 
   return (
-    <section className="rounded-[18px] bg-[color:var(--color-surface)] px-4 py-3 shadow-[var(--shadow-sm)]">
-      <p className="text-[13px] text-[color:var(--color-fg-muted)]">
-        {t('monthly', { n: count, habit: habitLabel })}
-      </p>
-    </section>
+    <p className="flex flex-wrap items-center gap-x-2.5 gap-y-1 text-[14px] leading-relaxed text-[color:var(--color-fg)]">
+      <span>{t('monthly')}</span>
+      <SubtleDot />
+      <span
+        className="font-semibold text-[color:var(--color-accent)]"
+        style={{ fontVariantNumeric: 'tabular-nums' }}
+      >
+        {t('monthlyDays', { n: count })}
+      </span>
+      <SubtleDot />
+      <span className="text-[color:var(--color-fg-muted)]">
+        {t('monthlyHabit', { habit: habitLabel })}
+      </span>
+    </p>
   );
 }
-

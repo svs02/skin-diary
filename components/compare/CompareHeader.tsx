@@ -2,8 +2,11 @@
 
 import { useRouter } from 'next/navigation';
 import { useTranslations } from 'next-intl';
+import { useRef, type KeyboardEvent } from 'react';
 import type { Angle } from '@/types';
 import type { SheetMode } from './EditSheet';
+
+export type ViewMode = 'slider' | 'sideBySide';
 
 interface Props {
   angle: Angle;
@@ -12,14 +15,13 @@ interface Props {
   openSheet: (mode: Exclude<SheetMode, null>, originEl: HTMLElement | null) => void;
   activeMode: SheetMode;
   chipsDisabled?: boolean;
+  viewMode: ViewMode;
+  onViewModeChange: (mode: ViewMode) => void;
 }
 
-/**
- * 헤더(56dp sticky) + 칩 row.
- *  - 백버튼은 router.back() (44dp 터치 타겟).
- *  - 칩: angle / dateA / dateB. 클릭 시 sheet 오픈.
- *  - 활성(sheet 열림 중): bg accent-dim + accent-text.
- */
+const VIEW_MODES: ViewMode[] = ['slider', 'sideBySide'];
+const CELL_W = 88;
+
 export function CompareHeader({
   angle,
   fromKey,
@@ -27,6 +29,8 @@ export function CompareHeader({
   openSheet,
   activeMode,
   chipsDisabled,
+  viewMode,
+  onViewModeChange,
 }: Props) {
   const router = useRouter();
   const t = useTranslations('compare');
@@ -41,7 +45,7 @@ export function CompareHeader({
   }
 
   return (
-    <div className="flex flex-col gap-3">
+    <div className="flex flex-col gap-2">
       {/* 56dp sticky header */}
       <header
         className="sticky top-0 z-20 -mx-5 flex h-14 items-center px-2"
@@ -62,8 +66,13 @@ export function CompareHeader({
         </h1>
       </header>
 
+      {/* sub-row: ViewModeToggle (우측 정렬) */}
+      <div className="flex h-10 items-center justify-end">
+        <ViewModeToggle viewMode={viewMode} onChange={onViewModeChange} />
+      </div>
+
       {/* 칩 row */}
-      <div className="flex flex-wrap gap-2">
+      <div className="flex items-stretch gap-2">
         <Chip
           label={tAngle(angle)}
           active={isAngleActive}
@@ -78,6 +87,7 @@ export function CompareHeader({
           onClick={(el) => openSheet('dateA', el)}
           ariaControls="compare-edit-sheet"
           prefix="A"
+          stretch
         />
         <Chip
           label={shortDate(toKey)}
@@ -86,9 +96,102 @@ export function CompareHeader({
           onClick={(el) => openSheet('dateB', el)}
           ariaControls="compare-edit-sheet"
           prefix="B"
+          stretch
         />
       </div>
     </div>
+  );
+}
+
+function ViewModeToggle({
+  viewMode,
+  onChange,
+}: {
+  viewMode: ViewMode;
+  onChange: (mode: ViewMode) => void;
+}) {
+  const t = useTranslations('compare.viewMode');
+  const sliderRef = useRef<HTMLButtonElement>(null);
+  const sideRef = useRef<HTMLButtonElement>(null);
+  const refs: Record<ViewMode, React.RefObject<HTMLButtonElement | null>> = {
+    slider: sliderRef,
+    sideBySide: sideRef,
+  };
+  const idx = VIEW_MODES.indexOf(viewMode);
+
+  function onKeyDown(e: KeyboardEvent<HTMLDivElement>) {
+    if (e.key !== 'ArrowLeft' && e.key !== 'ArrowRight') return;
+    e.preventDefault();
+    const next = VIEW_MODES[(idx + 1) % VIEW_MODES.length];
+    onChange(next);
+    refs[next].current?.focus();
+  }
+
+  return (
+    <div
+      role="tablist"
+      aria-label={t('toggle')}
+      onKeyDown={onKeyDown}
+      className="relative inline-flex h-8 items-center rounded-[var(--radius-md)] bg-[color:var(--color-surface-2)] p-0.5"
+    >
+      <span
+        aria-hidden
+        className="compare-vm-thumb absolute left-0.5 top-0.5 h-7 rounded-[10px] bg-[color:var(--color-bg)]"
+        style={{
+          width: `${CELL_W}px`,
+          transform: `translateX(${idx * CELL_W}px)`,
+          transition:
+            'transform 220ms var(--ease-emphasis), background-color 220ms var(--ease-emphasis)',
+        }}
+      />
+      <Tab
+        ref={sliderRef}
+        selected={viewMode === 'slider'}
+        label={t('slider')}
+        onSelect={() => onChange('slider')}
+      />
+      <Tab
+        ref={sideRef}
+        selected={viewMode === 'sideBySide'}
+        label={t('sideBySide')}
+        onSelect={() => onChange('sideBySide')}
+      />
+    </div>
+  );
+}
+
+function Tab({
+  ref,
+  selected,
+  label,
+  onSelect,
+}: {
+  ref: React.RefObject<HTMLButtonElement | null>;
+  selected: boolean;
+  label: string;
+  onSelect: () => void;
+}) {
+  return (
+    <button
+      ref={ref}
+      type="button"
+      role="tab"
+      aria-selected={selected}
+      tabIndex={selected ? 0 : -1}
+      onClick={onSelect}
+      className={`relative z-10 inline-flex h-7 items-center justify-center text-[13px] font-medium transition-colors ${
+        selected
+          ? 'text-[color:var(--color-fg)]'
+          : 'text-[color:var(--color-fg-muted)]'
+      }`}
+      style={{
+        width: `${CELL_W}px`,
+        transitionDuration: '220ms',
+        transitionTimingFunction: 'var(--ease-emphasis)',
+      }}
+    >
+      {label}
+    </button>
   );
 }
 
@@ -99,6 +202,7 @@ function Chip({
   onClick,
   ariaControls,
   prefix,
+  stretch,
 }: {
   label: string;
   active: boolean;
@@ -106,6 +210,7 @@ function Chip({
   onClick: (el: HTMLElement | null) => void;
   ariaControls?: string;
   prefix?: string;
+  stretch?: boolean;
 }) {
   return (
     <button
@@ -115,14 +220,18 @@ function Chip({
       aria-expanded={active}
       aria-controls={ariaControls}
       onClick={(e) => onClick(e.currentTarget)}
-      className={`inline-flex h-9 items-center gap-1 rounded-full px-3 text-[13px] font-medium transition-colors ${
+      className={`inline-flex h-9 items-center rounded-full px-3 text-[13px] font-medium transition-colors ${
+        stretch ? 'flex-1 min-w-0 justify-between gap-2' : 'flex-none gap-1'
+      } ${
         active
           ? 'bg-[color:var(--color-accent-dim)] text-[color:var(--color-accent-text)]'
           : 'bg-[color:var(--color-surface-2)] text-[color:var(--color-fg)]'
       } ${disabled ? 'opacity-40' : ''}`}
     >
-      {prefix && <span className="text-[11px] opacity-70">{prefix}</span>}
-      <span>{label}</span>
+      <span className={`flex min-w-0 items-center gap-1 ${stretch ? 'truncate' : ''}`}>
+        {prefix && <span className="text-[11px] opacity-70">{prefix}</span>}
+        <span className={stretch ? 'truncate' : ''}>{label}</span>
+      </span>
       <svg
         width="12"
         height="12"
@@ -133,6 +242,7 @@ function Chip({
         strokeLinecap="round"
         strokeLinejoin="round"
         aria-hidden
+        className="flex-none"
       >
         <polyline points="6 9 12 15 18 9" />
       </svg>

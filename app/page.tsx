@@ -1,21 +1,50 @@
-'use client';
+import type { Metadata } from 'next';
+import { getLocale, getTranslations } from 'next-intl/server';
+import { MarketingPage } from './_marketing/MarketingPage';
+import { AuthRedirect } from './_marketing/AuthRedirect';
 
-import { useEffect } from 'react';
-import { useRouter } from 'next/navigation';
-import { useAuth } from '@/lib/auth/AuthProvider';
+export async function generateMetadata(): Promise<Metadata> {
+  const locale = await getLocale();
+  const t = await getTranslations({ locale, namespace: 'marketing.meta' });
+  const title = t('title');
+  const description = t('description');
+  const ogLocale = locale === 'ko' ? 'ko_KR' : 'en_US';
+  const altLocale = locale === 'ko' ? ['en_US'] : ['ko_KR'];
 
-export default function RootRedirect() {
-  const { user, loading } = useAuth();
-  const router = useRouter();
+  return {
+    title,
+    description,
+    openGraph: {
+      title,
+      description,
+      type: 'website',
+      locale: ogLocale,
+      alternateLocale: altLocale,
+      images: [
+        {
+          url: '/og/skin-diary-og.png',
+          width: 1200,
+          height: 630,
+          alt: 'Skin Diary',
+        },
+      ],
+    },
+    twitter: {
+      card: 'summary_large_image',
+      title,
+      description,
+      images: ['/og/skin-diary-og.png'],
+    },
+    alternates: { canonical: '/' },
+    robots: { index: true, follow: true },
+  };
+}
 
-  useEffect(() => {
-    if (loading) return;
-    router.replace(user ? '/today' : '/login');
-  }, [user, loading, router]);
-
+export default function RootPage() {
   return (
-    <div className="flex flex-1 items-center justify-center">
-      <span className="text-fg-muted text-sm">…</span>
-    </div>
+    <>
+      <AuthRedirect />
+      <MarketingPage />
+    </>
   );
 }

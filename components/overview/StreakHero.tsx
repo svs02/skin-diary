@@ -2,33 +2,50 @@
 
 import { useTranslations } from 'next-intl';
 import { useStreak } from './useOverviewData';
-import { StreakHeroSkeleton } from './Skeletons';
 
 /**
- * Streak Hero — Overview 최상단 정량 보조.
- *  - 큰 숫자는 text-display-md (40px, weight 700) 토큰 사용. 일반 헤딩에 사용 금지.
- *  - 0일 = emptyCaption / 1일 이상 = loadedCaption.
+ * Streak hero text:
+ *  - streak >= 1: 56px 숫자 + 24px 단위 같은 줄 (`연속 기록 중` 캡션 없음)
+ *  - streak === 0: 32px display 헤드라인 `오늘부터 시작해요`
+ *  - streak undefined: null (Suspense fallback이 처리)
+ *
+ * 카드 박스/패딩 없음 — 부모 HeroBlock가 surface 제공.
  */
 export function StreakHero() {
   const t = useTranslations('overview.streak');
   const streak = useStreak();
 
-  if (streak === undefined) return <StreakHeroSkeleton />;
+  if (streak === undefined) return null;
+
+  if (streak === 0) {
+    return (
+      <h2
+        className="font-bold text-[color:var(--color-fg)]"
+        style={{
+          fontSize: 'var(--text-streak-empty)',
+          lineHeight: 'var(--text-streak-empty--line-height)',
+          letterSpacing: 'var(--text-streak-empty--letter-spacing)',
+        }}
+      >
+        {t('emptyHeadline')}
+      </h2>
+    );
+  }
 
   return (
-    <section
-      className="flex flex-col items-center gap-1 rounded-[22px] bg-[color:var(--color-surface)] px-5 py-7 shadow-[var(--shadow-sm)]"
-      aria-label="streak"
+    <h2
+      className="font-bold text-[color:var(--color-fg)]"
+      style={{
+        fontSize: 'var(--text-streak-hero)',
+        lineHeight: 'var(--text-streak-hero--line-height)',
+        letterSpacing: 'var(--text-streak-hero--letter-spacing)',
+        fontVariantNumeric: 'tabular-nums',
+      }}
     >
-      <p
-        className="text-display-md font-bold tracking-tight text-[color:var(--color-fg)]"
-        style={{ fontFamily: 'var(--font-display)' }}
-      >
-        {t('unitDays', { n: streak })}
-      </p>
-      <p className="text-[13px] text-[color:var(--color-fg-muted)]">
-        {streak === 0 ? t('emptyCaption') : t('loadedCaption')}
-      </p>
-    </section>
+      {t('unitDays', { n: streak })}
+      <span className="ml-1 text-[24px] font-semibold text-[color:var(--color-fg-muted)]">
+        {t('unitLabel')}
+      </span>
+    </h2>
   );
 }

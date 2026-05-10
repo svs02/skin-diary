@@ -209,6 +209,17 @@ export function CompareView({ fromUrl, toUrl, fromDate, toDate, angle, splitHidd
           onRatioChange={(n) => setRatio(clamp(n))}
           onResetMaybe={() => setRatio(50)}
           hidden={splitHidden}
+          containerRef={containerRef}
+          onDragStart={() => {
+            draggingRef.current = true;
+            setIsDragging(true);
+          }}
+          onDragEnd={() => {
+            draggingRef.current = false;
+            setIsDragging(false);
+            // 50% 자석
+            setRatio((cur) => (Math.abs(cur - 50) <= 2 ? 50 : cur));
+          }}
         />
       </div>
 
@@ -250,7 +261,7 @@ function SideLabel({
   );
 }
 
-function PhotoPlaceholder({ side }: { side: 'A' | 'B' }) {
+export function PhotoPlaceholder({ side }: { side: 'A' | 'B' }) {
   const t = useTranslations('compare');
   return (
     <div className="flex h-full w-full flex-col items-center justify-center bg-[color:var(--color-surface-2)] text-[color:var(--color-fg-muted)]">

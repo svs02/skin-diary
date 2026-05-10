@@ -6,10 +6,9 @@ import { useStreak } from './useOverviewData';
 
 /**
  * Empty tip — Streak 0~6일 + dismissed 아닐 때만 노출.
- *  - localStorage 'overviewTipDismissed' === 'true' 시 영구 숨김 (설정 페이지에서 reset 가능 — 추후).
- *  - dismiss 클릭 → localStorage 저장 + state로 즉시 unmount.
- *  - SSR/CSR mismatch 방지: useSyncExternalStore로 hydration 안전 처리.
- *    (React 19의 set-state-in-effect 규칙 회피)
+ * 카드 박스 없음(부모 MetaInlineBlock가 surface 제공).
+ *  - localStorage 'overviewTipDismissed' === 'true' 시 영구 숨김.
+ *  - dismiss는 24×24 × 아이콘 버튼 (텍스트 링크 폐기).
  */
 
 const STORAGE_KEY = 'overviewTipDismissed';
@@ -25,23 +24,28 @@ function getDismissedFromStorage(): boolean {
 
 function subscribe(callback: () => void): () => void {
   if (typeof window === 'undefined') return () => {};
-  // localStorage 변경은 다른 탭에서만 'storage' 이벤트가 발생하지만,
-  // 같은 탭 dismiss는 sessionDismissed state로 처리 (아래).
   window.addEventListener('storage', callback);
   return () => window.removeEventListener('storage', callback);
+}
+
+function TipBullet() {
+  return (
+    <span
+      aria-hidden
+      className="mt-[7px] inline-block h-[3px] w-[3px] shrink-0 rounded-full bg-[color:var(--color-fg-subtle)]"
+    />
+  );
 }
 
 export function EmptyTip() {
   const streak = useStreak();
   const t = useTranslations('overview.tip');
 
-  // 영구 dismiss (localStorage)
   const persistedDismissed = useSyncExternalStore(
     subscribe,
     getDismissedFromStorage,
-    () => false, // SSR snapshot
+    () => false,
   );
-  // 같은 탭 즉시 dismiss (storage 이벤트 미발생 대비)
   const [sessionDismissed, setSessionDismissed] = useState(false);
 
   if (persistedDismissed || sessionDismissed) return null;
@@ -58,22 +62,45 @@ export function EmptyTip() {
   }
 
   return (
-    <section className="flex flex-col gap-2 rounded-[18px] bg-[color:var(--color-surface-2)] px-4 py-3">
-      <p className="text-[13px] font-semibold text-[color:var(--color-fg)]">
-        {t('title')}
-      </p>
-      <ul className="flex flex-col gap-1 text-[12px] leading-relaxed text-[color:var(--color-fg-muted)]">
-        <li>{t('item1')}</li>
-        <li>{t('item2')}</li>
-        <li>{t('item3')}</li>
-      </ul>
+    <div className="flex items-start gap-3.5">
+      <div className="flex-1">
+        <h4
+          className="mb-2 text-[15px] font-semibold text-[color:var(--color-fg)]"
+          style={{ letterSpacing: '-0.01em' }}
+        >
+          {t('title')}
+        </h4>
+        <ul className="flex flex-col gap-[6px]">
+          {(['item1', 'item2', 'item3'] as const).map((key) => (
+            <li
+              key={key}
+              className="flex items-start gap-2 text-[13px] leading-relaxed text-[color:var(--color-fg-muted)]"
+            >
+              <TipBullet />
+              <span>{t(key)}</span>
+            </li>
+          ))}
+        </ul>
+      </div>
       <button
         type="button"
         onClick={handleDismiss}
-        className="mt-1 self-end text-[12px] font-medium text-[color:var(--color-accent-text)] hover:opacity-80"
+        aria-label={t('dismiss')}
+        className="flex h-6 w-6 shrink-0 items-center justify-center rounded-md text-[color:var(--color-fg-subtle)] transition-colors duration-150 hover:bg-[color:var(--color-surface-3)]"
       >
-        {t('dismiss')}
+        <svg
+          width="14"
+          height="14"
+          viewBox="0 0 14 14"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="1.6"
+          strokeLinecap="round"
+          aria-hidden
+        >
+          <path d="M3 3 L11 11 M11 3 L3 11" />
+        </svg>
       </button>
-    </section>
+    </div>
   );
 }

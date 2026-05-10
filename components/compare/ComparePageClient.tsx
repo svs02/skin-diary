@@ -10,8 +10,9 @@ import { isFuture, isValidDateKey } from '@/lib/utils/dateKey';
 import { ANGLE_ORDER, pickComparePair } from '@/lib/utils/comparePair';
 import { useCompareData } from '@/hooks/useCompareData';
 import type { Angle } from '@/types';
-import { CompareHeader } from './CompareHeader';
+import { CompareHeader, type ViewMode } from './CompareHeader';
 import { CompareView } from './CompareView';
+import { SideBySideView } from './SideBySideView';
 import { EditSheet, type SheetMode } from './EditSheet';
 import { MetaToggle } from './MetaToggle';
 import { MetaCompare } from './MetaCompare';
@@ -22,6 +23,7 @@ type State = {
   angle: Angle;
   sheetMode: SheetMode;
   metaOpen: boolean;
+  viewMode: ViewMode;
 };
 
 type Action =
@@ -30,7 +32,8 @@ type Action =
   | { type: 'setDate'; which: 'from' | 'to'; dateKey: string }
   | { type: 'openSheet'; mode: Exclude<SheetMode, null> }
   | { type: 'closeSheet' }
-  | { type: 'toggleMeta'; open: boolean };
+  | { type: 'toggleMeta'; open: boolean }
+  | { type: 'setViewMode'; mode: ViewMode };
 
 function isAngle(value: string): value is Angle {
   return (ANGLE_ORDER as readonly string[]).includes(value);
@@ -64,6 +67,8 @@ function reducer(state: State, action: Action): State {
       return { ...state, sheetMode: null };
     case 'toggleMeta':
       return { ...state, metaOpen: action.open };
+    case 'setViewMode':
+      return { ...state, viewMode: action.mode };
   }
 }
 
@@ -98,6 +103,7 @@ export default function ComparePageClient() {
     angle: initialAngle,
     sheetMode: null,
     metaOpen: false,
+    viewMode: 'slider',
   });
 
   // 진입 동기화 — recent 로드 직후 한 번 init
@@ -170,10 +176,20 @@ export default function ComparePageClient() {
         toKey={state.toKey}
         activeMode={state.sheetMode}
         openSheet={openSheet}
+        viewMode={state.viewMode}
+        onViewModeChange={(mode) => dispatch({ type: 'setViewMode', mode })}
       />
 
       {bothNoUrl ? (
         <EmptyNoPhoto inline />
+      ) : state.viewMode === 'sideBySide' ? (
+        <SideBySideView
+          fromUrl={compare.urls.from}
+          toUrl={compare.urls.to}
+          fromDate={state.fromKey}
+          toDate={state.toKey}
+          angle={state.angle}
+        />
       ) : (
         <CompareView
           fromUrl={compare.urls.from}
