@@ -50,6 +50,10 @@ export function AddPhotoSheet({
   // Mount + enter animation
   useEffect(() => {
     if (open) {
+      // open=true: 즉시 mount → 다음 프레임에 진입 애니메이션 트리거.
+      // close 애니메이션 220ms 보존을 위해 derived state로 풀 수 없으므로
+      // effect 안의 setState를 좁게 허용한다 (PhotoMenuSheet과 동일 패턴).
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- sheet open 시 DOM 부착(mount) 동기화. close 애니메이션 보존을 위해 derived state 불가.
       setMounted(true);
       const id = requestAnimationFrame(() => setAnimateIn(true));
       return () => cancelAnimationFrame(id);

@@ -78,7 +78,9 @@ jobs:
 
   rules-prod:
     name: Deploy rules to prod (skin-diary-prod)
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    if: >
+      (github.event_name == 'push' && github.ref == 'refs/heads/main') ||
+      github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-latest
     environment: firebase-prod
     steps:

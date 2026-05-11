@@ -93,8 +93,13 @@ export function DeleteAccountDialog({ open, user, onClose }: Props) {
   }, [onClose, submitting]);
 
   // ---- mount/unmount + slide-in animation ----
+  // open prop 변화에 동기화: mount는 DOM 부착 자체 (props→DOM), animate는 RAF 비동기.
+  // 추가로 open=true 시 폼 상태를 reset해 재오픈 시 이전 시도가 누적되지 않게 한다.
+  // close 애니메이션 220ms 보존이 필요해 derived state로는 풀 수 없으므로
+  // effect 안의 setState를 좁게 허용한다.
   useEffect(() => {
     if (open) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- dialog open 시 DOM mount + 폼 reset 동기화. close 애니메이션 보존을 위해 derived state 불가.
       setMounted(true);
       // open 시점에 상태 초기화 — 이전 시도의 입력/에러를 누적시키지 않는다.
       setStep('confirm');

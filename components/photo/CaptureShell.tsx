@@ -5,6 +5,7 @@ import {
   useEffect,
   useRef,
   useState,
+  useSyncExternalStore,
   type ChangeEvent,
 } from 'react';
 import { useRouter } from 'next/navigation';
@@ -18,6 +19,19 @@ import type { Angle } from '@/types';
 import { AngleGuide } from './AngleGuide';
 
 const ANGLES: Angle[] = ['front', 'left', 'right'];
+
+// useSyncExternalStore 헬퍼 — detectPlatform()이 navigator 전역에 의존하므로
+// "외부 시스템" 으로 취급해 SSR/CSR 스냅샷을 분리한다.
+// 결과값은 mount 동안 변하지 않으므로 subscribe는 no-op이다.
+function subscribeNoop(): () => void {
+  return () => {};
+}
+function getPlatformSnapshot(): Platform {
+  return detectPlatform();
+}
+function getPlatformServerSnapshot(): Platform {
+  return 'unknown';
+}
 
 // next-intl messages 키와 detectPlatform 결과 매핑.
 // 'unknown' 분기까지 명시 키로 잡아 fallback 카피를 보장 (Spec §4.1).
@@ -77,7 +91,13 @@ export function CaptureShell({
   const tAngles = useTranslations('record.capture.angle');
 
   const [phase, setPhase] = useState<Phase>('checking');
-  const [platform, setPlatform] = useState<Platform>('unknown');
+  // 플랫폼 감지: SSR/초기 렌더는 'unknown', 클라이언트 hydration 후 detectPlatform() 결과로 동기화.
+  // useSyncExternalStore로 처리하면 useEffect 본문에서 setState 호출이 필요 없다.
+  const platform = useSyncExternalStore<Platform>(
+    subscribeNoop,
+    getPlatformSnapshot,
+    getPlatformServerSnapshot,
+  );
   const [deniedCount, setDeniedCount] = useState(0);
   const [facingMode, setFacingMode] = useState<'environment' | 'user'>('environment');
   const [hasMultipleCameras, setHasMultipleCameras] = useState(false);
@@ -271,11 +291,7 @@ export function CaptureShell({
     };
   }, []);
 
-  // 플랫폼 감지 (denied-permanent 카피 분기용, Spec §4.1).
-  // SSR 회피를 위해 mount 후 1회 결정.
-  useEffect(() => {
-    setPlatform(detectPlatform());
-  }, []);
+  // 플랫폼 감지는 useSyncExternalStore (위 platform 선언부 참고) — useEffect 불필요.
 
   // visibilitychange — 백그라운드 시 stream stop (배터리/권한)
   useEffect(() => {
