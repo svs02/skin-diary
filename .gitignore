@@ -65,6 +65,7 @@ playwright/.cache/
 
 # Claude Code (user-local only — agents/, scripts/, agent-routing.md는 공유)
 .claude/settings.local.json
+.claude/worktrees/
 
 # Local debug screenshots (root)
 /login-*.png

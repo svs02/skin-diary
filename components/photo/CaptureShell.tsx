@@ -70,15 +70,6 @@ function nextRotation(r: Rotation): Rotation {
   return ((r + 90) % 360) as Rotation;
 }
 
-const VIDEO_CONSTRAINTS_PREFERRED: MediaStreamConstraints = {
-  video: {
-    facingMode: 'environment',
-    width: { ideal: 1080 },
-    height: { ideal: 1080 },
-  },
-  audio: false,
-};
-
 const VIDEO_CONSTRAINTS_FALLBACK: MediaStreamConstraints = {
   video: true,
   audio: false,
