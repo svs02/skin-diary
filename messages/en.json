@@ -142,6 +142,11 @@
         "use": "Use",
         "retake": "Retake"
       },
+      "rotate": {
+        "label": "Rotate",
+        "degrees": "{deg}°",
+        "aria": "Rotate photo 90 degrees"
+      },
       "error": {
         "notFound": {
           "title": "No camera",
@@ -331,6 +336,15 @@
     },
     "error": {
       "future": "Future dates can't be compared"
+    },
+    "adjust": {
+      "hint": "Long-press then drag to pan, pinch to zoom",
+      "zoomIn": "Zoom in",
+      "zoomOut": "Zoom out",
+      "resetLeft": "Reset left photo",
+      "resetRight": "Reset right photo",
+      "resetBoth": "Reset both photos",
+      "resetShortcut": "Press 0 to reset"
     }
   },
   "marketing": {
