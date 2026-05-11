@@ -47,6 +47,10 @@ export function PhotoMenuSheet({
 
   useEffect(() => {
     if (open) {
+      // open=true: 즉시 mount → 다음 프레임에 진입 애니메이션 트리거.
+      // mount는 sheet의 DOM 부착 자체라 props→DOM 동기화이며, animate는 RAF 비동기.
+      // derived state로는 close 애니메이션 220ms 동안 mount=true 유지가 어려워 effect를 유지한다.
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- sheet open 시 DOM 부착(mount) 동기화. close 애니메이션 보존을 위해 derived state 불가.
       setMounted(true);
       const id = requestAnimationFrame(() => setAnimateIn(true));
       return () => cancelAnimationFrame(id);
