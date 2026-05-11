@@ -47,8 +47,9 @@ const MAX = 95;
 // 첫 진입은 사용자가 슬라이더 존재를 인지할 시간 부여, 이후 정지 시 1.2s 후 페이드.
 const INITIAL_VISIBLE_MS = 3000;
 const IDLE_VISIBLE_MS = 1200;
-// 시연/회의 환경에서도 위치 인지 유지 — 완전 0이 아닌 floor 유지.
-const FADE_FLOOR_OPACITY = 0.15;
+// idle 상태에서는 완전히 숨김 — 가운데 비교 시 분할선이 시야 방해되지 않도록.
+// 사용자가 hover / drag / focus / 키보드 조작하면 다시 가시 (bumpActivity 로 전환).
+const FADE_FLOOR_OPACITY = 0;
 
 export function SplitHandle({
   ratio,

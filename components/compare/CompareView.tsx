@@ -5,6 +5,8 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { useTranslations } from 'next-intl';
 import type { Angle } from '@/types';
 import { SplitHandle } from './SplitHandle';
+import { AdjustModeShell } from './AdjustModeShell';
+import { IDENTITY, clampOffset, clampScale, type Side, type Transform } from './transform';
 
 /**
  * 1:1 정사각 컨테이너 + 두 이미지 겹침 + clip-path 좌우 분할 + 슬라이더 핸들.
@@ -41,27 +43,13 @@ interface Props {
 const MIN = 5;
 const MAX = 95;
 
-const SCALE_MIN = 0.5;
-const SCALE_MAX = 3;
 const SCALE_STEP_WHEEL = 0.0015; // wheel deltaY → scale 배수
 
-const LONG_PRESS_MS = 500;
-const LONG_PRESS_TOLERANCE_PX = 8;
 const DOUBLE_TAP_MS = 280;
 const DOUBLE_TAP_TOLERANCE_PX = 24;
 
 const ONBOARD_KEY = 'sd:onboard:compare-pan';
 const ONBOARD_LIMIT = 3;
-
-interface Transform {
-  scale: number;
-  ox: number; // px offset x
-  oy: number; // px offset y
-}
-
-const IDENTITY: Transform = { scale: 1, ox: 0, oy: 0 };
-
-type Side = 'A' | 'B';
 
 interface PointerState {
   id: number;
@@ -75,28 +63,12 @@ interface PointerState {
 
 type GestureMode =
   | 'idle'
-  | 'split' // 한 손가락 ratio 드래그
-  | 'longpress-pending' // 한 손가락 down, 타이머 진행 중
-  | 'pan-touch' // 1손가락 long-press 이후 pan, OR 2손가락 pan
+  | 'pan-touch' // 1손가락 또는 2손가락 pan
   | 'pinch' // 2손가락 핀치 zoom
-  | 'pan-mouse'; // Shift+drag / middle drag
+  | 'pan-mouse'; // 마우스 드래그 pan
 
 function clampRatio(n: number) {
   return Math.max(MIN, Math.min(MAX, n));
-}
-
-function clampScale(s: number) {
-  return Math.max(SCALE_MIN, Math.min(SCALE_MAX, s));
-}
-
-function clampOffset(t: Transform, halfSize: number): Transform {
-  if (t.scale <= 1) return { scale: t.scale, ox: 0, oy: 0 };
-  const max = (t.scale - 1) * halfSize;
-  return {
-    scale: t.scale,
-    ox: Math.max(-max, Math.min(max, t.ox)),
-    oy: Math.max(-max, Math.min(max, t.oy)),
-  };
 }
 
 function prefersReducedMotion(): boolean {
@@ -130,10 +102,19 @@ export function CompareView({ fromUrl, toUrl, fromDate, toDate, angle, splitHidd
   const [demoForceVisible, setDemoForceVisible] = useState(false);
   const [showOnboardHint, setShowOnboardHint] = useState(false);
 
+  // ---- Adjust Mode ----
+  const [adjustOpen, setAdjustOpen] = useState(false);
+  const [adjustSide, setAdjustSide] = useState<Side>('A');
+  const [entrySnapshot, setEntrySnapshot] = useState<{ A: Transform; B: Transform } | null>(null);
+  const [toastMsg, setToastMsg] = useState<string | null>(null);
+  const adjustOpenRef = useRef(false);
+  useEffect(() => {
+    adjustOpenRef.current = adjustOpen;
+  }, [adjustOpen]);
+
   // gesture state refs
   const modeRef = useRef<GestureMode>('idle');
   const pointersRef = useRef<Map<number, PointerState>>(new Map());
-  const longPressTimerRef = useRef<number | null>(null);
   const lastTapRef = useRef<{ at: number; x: number; y: number; side: Side } | null>(null);
 
   // pinch state
@@ -214,6 +195,13 @@ export function CompareView({ fromUrl, toUrl, fromDate, toDate, angle, splitHidd
       setTFrom(IDENTITY);
       setTTo(IDENTITY);
       setActiveSide(null);
+      // Adjust Mode 활성 중 angle/URL 변경 → 자동 취소 (entrySnapshot은 이미 무의미)
+      if (adjustOpenRef.current) {
+        setAdjustOpen(false);
+        setEntrySnapshot(null);
+        setToastMsg('toastCanceled');
+        window.setTimeout(() => setToastMsg(null), 1800);
+      }
     }, 0);
     return () => window.clearTimeout(id);
   }, [fromUrl, toUrl, angle]);
@@ -271,18 +259,6 @@ export function CompareView({ fromUrl, toUrl, fromDate, toDate, angle, splitHidd
     }, 600);
   }, []);
 
-  const ratioFromClientX = useCallback(
-    (clientX: number): number => {
-      const el = containerRef.current;
-      if (!el) return ratio;
-      const rect = el.getBoundingClientRect();
-      if (rect.width <= 0) return ratio;
-      const pct = ((clientX - rect.left) / rect.width) * 100;
-      return clampRatio(pct);
-    },
-    [ratio],
-  );
-
   const currentSideFromX = useCallback(
     (clientX: number): Side => {
       const el = containerRef.current;
@@ -293,23 +269,53 @@ export function CompareView({ fromUrl, toUrl, fromDate, toDate, angle, splitHidd
     [ratio],
   );
 
-  const clearLongPress = () => {
-    if (longPressTimerRef.current != null) {
-      window.clearTimeout(longPressTimerRef.current);
-      longPressTimerRef.current = null;
-    }
-  };
-
   const resetTransform = useCallback((side: Side | 'both') => {
     if (side === 'A' || side === 'both') setTFrom(IDENTITY);
     if (side === 'B' || side === 'both') setTTo(IDENTITY);
   }, []);
+
+  // ---- Adjust Mode handlers ----
+  const openAdjust = useCallback(() => {
+    setEntrySnapshot({ A: tFrom, B: tTo });
+    const defaultSide: Side =
+      adjustSide === 'A' && fromUrl
+        ? 'A'
+        : adjustSide === 'B' && toUrl
+          ? 'B'
+          : fromUrl
+            ? 'A'
+            : 'B';
+    setAdjustSide(defaultSide);
+    setAdjustOpen(true);
+  }, [tFrom, tTo, adjustSide, fromUrl, toUrl]);
+
+  const applyAdjust = useCallback(() => {
+    setAdjustOpen(false);
+    setEntrySnapshot(null);
+  }, []);
+
+  const cancelAdjust = useCallback(
+    (withToast: boolean) => {
+      if (entrySnapshot) {
+        setTFrom(entrySnapshot.A);
+        setTTo(entrySnapshot.B);
+      }
+      setAdjustOpen(false);
+      setEntrySnapshot(null);
+      if (withToast) {
+        setToastMsg('toastCanceled');
+        window.setTimeout(() => setToastMsg(null), 1800);
+      }
+    },
+    [entrySnapshot],
+  );
 
   // ---- wheel (desktop): hover 측 zoom ----
   useEffect(() => {
     const el = containerRef.current;
     if (!el) return;
     const handler = (e: WheelEvent) => {
+      if (adjustOpenRef.current) return;
       if (splitHidden) return;
       e.preventDefault();
       const side = currentSideFromX(e.clientX);
@@ -339,6 +345,7 @@ export function CompareView({ fromUrl, toUrl, fromDate, toDate, angle, splitHidd
   // ---- keyboard: '0' → 양쪽 리셋 ----
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
+      if (adjustOpenRef.current) return;
       if (e.key !== '0') return;
       const tag = (e.target as HTMLElement | null)?.tagName ?? '';
       if (tag === 'INPUT' || tag === 'TEXTAREA') return;
@@ -349,13 +356,6 @@ export function CompareView({ fromUrl, toUrl, fromDate, toDate, angle, splitHidd
   }, [resetTransform]);
 
   // ---- pointer handlers ----
-  const startSplitDrag = (clientX: number) => {
-    draggingRef.current = true;
-    setIsDragging(true);
-    setRatio(ratioFromClientX(clientX));
-    modeRef.current = 'split';
-  };
-
   const startPanFromPointer = (side: Side, p: PointerState) => {
     panSideRef.current = side;
     panStartTransformRef.current = side === 'A' ? tFrom : tTo;
@@ -367,6 +367,7 @@ export function CompareView({ fromUrl, toUrl, fromDate, toDate, angle, splitHidd
   };
 
   const onPointerDown = (e: React.PointerEvent<HTMLDivElement>) => {
+    if (adjustOpen) return;
     // SplitHandle 노브의 hit은 그쪽이 stopPropagation 하므로 여기까지 안 옴.
     if (splitHidden && pointersRef.current.size === 0) {
       // splitHidden일 때는 split 드래그는 의미 없지만 pan/pinch는 여전히 허용
@@ -391,14 +392,8 @@ export function CompareView({ fromUrl, toUrl, fromDate, toDate, angle, splitHidd
     };
     pointersRef.current.set(e.pointerId, ps);
 
-    // 두번째 포인터 진입 → split 드래그 취소, long-press 취소
+    // 두번째 포인터 진입 → pinch 시작 (drag-vs-pinch는 move 단계에서 결정)
     if (pointersRef.current.size === 2) {
-      clearLongPress();
-      if (modeRef.current === 'split') {
-        draggingRef.current = false;
-        setIsDragging(false);
-      }
-      // pinch 시작 (drag-vs-pinch는 move 단계에서 결정)
       const pts = Array.from(pointersRef.current.values());
       const a = pts[0];
       const b = pts[1];
@@ -424,22 +419,16 @@ export function CompareView({ fromUrl, toUrl, fromDate, toDate, angle, splitHidd
       return;
     }
 
-    // 첫 번째 포인터
+    // 첫 번째 포인터 — 마우스: 좌클릭 드래그도 즉시 pan (split은 SplitHandle 노브 전용)
     if (e.pointerType === 'mouse') {
-      const useMousePan = e.shiftKey || e.button === 1;
-      if (useMousePan) {
-        panSideRef.current = side;
-        panStartTransformRef.current = side === 'A' ? tFrom : tTo;
-        panAnchorRef.current = { x: e.clientX, y: e.clientY };
-        modeRef.current = 'pan-mouse';
-        setPanModeActive(true);
-        setTouchAction('none');
-        markActive(side);
-        e.preventDefault();
-        return;
-      }
-      // 일반 마우스 드래그 → split
-      if (!splitHidden) startSplitDrag(e.clientX);
+      panSideRef.current = side;
+      panStartTransformRef.current = side === 'A' ? tFrom : tTo;
+      panAnchorRef.current = { x: e.clientX, y: e.clientY };
+      modeRef.current = 'pan-mouse';
+      setPanModeActive(true);
+      setTouchAction('none');
+      markActive(side);
+      e.preventDefault();
       return;
     }
 
@@ -455,43 +444,22 @@ export function CompareView({ fromUrl, toUrl, fromDate, toDate, angle, splitHidd
         Math.hypot(dx, dy) <= DOUBLE_TAP_TOLERANCE_PX &&
         side === lt.side
       ) {
-        // 첫 탭에서 시작된 long-press 타이머가 아직 살아있을 수 있어 명시적 정리.
-        clearLongPress();
         resetTransform(side);
         markActive(side);
         lastTapRef.current = null;
-        // 더블탭은 split 드래그 시작하지 않음
         modeRef.current = 'idle';
         return;
       }
     }
     lastTapRef.current = { at: now, x: e.clientX, y: e.clientY, side };
 
-    // long-press 타이머 시작
-    modeRef.current = 'longpress-pending';
-    clearLongPress();
-    longPressTimerRef.current = window.setTimeout(() => {
-      // 타이머 만료 시점에도 여전히 single-pointer pending이면 pan 모드 진입
-      const p = pointersRef.current.get(e.pointerId);
-      if (!p) return;
-      if (pointersRef.current.size !== 1) return;
-      if (modeRef.current !== 'longpress-pending') return;
-      const dx = p.curX - p.startX;
-      const dy = p.curY - p.startY;
-      if (Math.hypot(dx, dy) > LONG_PRESS_TOLERANCE_PX) return;
-      startPanFromPointer(p.side, p);
-    }, LONG_PRESS_MS);
-
-    // 동시에 split 드래그도 가능성 유지 (이동이 임계 넘으면 split 진행)
-    if (!splitHidden) {
-      // ratio 변경은 첫 move 때만 시작 — 즉시 시작하면 더블탭 위치도 ratio가 따라가버림.
-      // 그러나 기존 UX 보존을 위해 즉시 시작도 허용. tolerance 내에서는 long-press가 우선이지만
-      // 사용자가 빠르게 드래그하면 split이 자연스럽게 작동해야 한다.
-      // → 첫 move에서 거리 확인 후 split으로 전환.
-    }
+    // 한 손가락 드래그는 항상 즉시 pan (split 조작은 SplitHandle 노브 전용).
+    // 줌 배율과 무관하게 작동하므로 long-press 게이트 불필요.
+    startPanFromPointer(side, ps);
   };
 
   const onPointerMove = (e: React.PointerEvent<HTMLDivElement>) => {
+    if (adjustOpen) return;
     const ps = pointersRef.current.get(e.pointerId);
     if (!ps) return;
     ps.curX = e.clientX;
@@ -560,23 +528,6 @@ export function CompareView({ fromUrl, toUrl, fromDate, toDate, angle, splitHidd
     }
 
     // 1개 포인터
-    if (modeRef.current === 'longpress-pending') {
-      const dx = ps.curX - ps.startX;
-      const dy = ps.curY - ps.startY;
-      if (Math.hypot(dx, dy) > LONG_PRESS_TOLERANCE_PX) {
-        // long-press 취소 → split 드래그로 전환
-        clearLongPress();
-        if (!splitHidden && e.pointerType !== 'mouse') {
-          startSplitDrag(ps.startX);
-        }
-      }
-    }
-
-    if (modeRef.current === 'split') {
-      setRatio(ratioFromClientX(ps.curX));
-      return;
-    }
-
     if (modeRef.current === 'pan-touch' || modeRef.current === 'pan-mouse') {
       const side = panSideRef.current;
       const startT = panStartTransformRef.current;
@@ -601,12 +552,6 @@ export function CompareView({ fromUrl, toUrl, fromDate, toDate, angle, splitHidd
     const remaining = pointersRef.current.size;
 
     if (remaining === 0) {
-      clearLongPress();
-      if (modeRef.current === 'split') {
-        draggingRef.current = false;
-        setIsDragging(false);
-        setRatio((cur) => (Math.abs(cur - 50) <= 2 ? 50 : cur));
-      }
       modeRef.current = 'idle';
       setPanModeActive(false);
       setTouchAction('pan-y');
@@ -649,32 +594,28 @@ export function CompareView({ fromUrl, toUrl, fromDate, toDate, angle, splitHidd
     };
   };
 
-  return (
-    <div className="flex flex-col gap-2">
-      {showOnboardHint && !splitHidden && (
-        <p
-          className="rounded-[var(--radius-md)] bg-[color:var(--color-surface-2)] px-3 py-2 text-center text-[12px] text-[color:var(--color-fg-muted)]"
-          role="note"
-        >
-          {t('adjust.hint')}
-        </p>
-      )}
-
-      <div
-        ref={containerRef}
-        onPointerDown={onPointerDown}
-        onPointerMove={onPointerMove}
-        onPointerUp={onPointerUp}
-        onPointerCancel={onPointerCancel}
-        className="relative aspect-square w-full overflow-hidden rounded-[var(--radius-lg)] bg-[color:var(--color-surface)] shadow-[var(--shadow-sm)]"
-        style={{ touchAction, userSelect: 'none' }}
-      >
+  const imageContainer = (
+    <div
+      ref={containerRef}
+      onPointerDown={onPointerDown}
+      onPointerMove={onPointerMove}
+      onPointerUp={onPointerUp}
+      onPointerCancel={onPointerCancel}
+      className="relative aspect-square w-full overflow-hidden rounded-[var(--radius-lg)] bg-[color:var(--color-surface)] shadow-[var(--shadow-sm)]"
+      style={{ touchAction, userSelect: 'none' }}
+    >
         {/* From 레이어 (좌측) */}
         <div
           className="absolute inset-0"
           style={{
-            clipPath: splitHidden ? 'inset(0 50% 0 0)' : `inset(0 ${100 - ratio}% 0 0)`,
-            transition: isDragging ? 'none' : 'clip-path 120ms ease-out',
+            clipPath:
+              adjustOpen || splitHidden
+                ? 'inset(0 50% 0 0)'
+                : `inset(0 ${100 - ratio}% 0 0)`,
+            opacity: adjustOpen && adjustSide !== 'A' ? 0.3 : 1,
+            transition: isDragging
+              ? 'none'
+              : 'clip-path 120ms ease-out, opacity 180ms ease-out',
           }}
         >
           <div
@@ -707,8 +648,14 @@ export function CompareView({ fromUrl, toUrl, fromDate, toDate, angle, splitHidd
         <div
           className="absolute inset-0"
           style={{
-            clipPath: splitHidden ? 'inset(0 0 0 50%)' : `inset(0 0 0 ${ratio}%)`,
-            transition: isDragging ? 'none' : 'clip-path 120ms ease-out',
+            clipPath:
+              adjustOpen || splitHidden
+                ? 'inset(0 0 0 50%)'
+                : `inset(0 0 0 ${ratio}%)`,
+            opacity: adjustOpen && adjustSide !== 'B' ? 0.3 : 1,
+            transition: isDragging
+              ? 'none'
+              : 'clip-path 120ms ease-out, opacity 180ms ease-out',
           }}
         >
           <div
@@ -740,29 +687,58 @@ export function CompareView({ fromUrl, toUrl, fromDate, toDate, angle, splitHidd
         <SideLabel position="left" date={fromDate} side="A" />
         <SideLabel position="right" date={toDate} side="B" />
 
-        {/* 분할선 */}
-        <SplitHandle
-          ratio={ratio}
-          onRatioChange={(n) => setRatio(clampRatio(n))}
-          onResetMaybe={() => setRatio(50)}
-          hidden={splitHidden || panModeActive}
-          forceVisible={demoForceVisible}
-          containerRef={containerRef}
-          onDragStart={() => {
-            draggingRef.current = true;
-            setIsDragging(true);
-          }}
-          onDragEnd={() => {
-            draggingRef.current = false;
-            setIsDragging(false);
-            setRatio((cur) => (Math.abs(cur - 50) <= 2 ? 50 : cur));
-          }}
-        />
-      </div>
+      {/* 분할선 */}
+      <SplitHandle
+        ratio={ratio}
+        onRatioChange={(n) => setRatio(clampRatio(n))}
+        onResetMaybe={() => setRatio(50)}
+        hidden={splitHidden || panModeActive || adjustOpen}
+        forceVisible={demoForceVisible}
+        containerRef={containerRef}
+        onDragStart={() => {
+          draggingRef.current = true;
+          setIsDragging(true);
+        }}
+        onDragEnd={() => {
+          draggingRef.current = false;
+          setIsDragging(false);
+          setRatio((cur) => (Math.abs(cur - 50) <= 2 ? 50 : cur));
+        }}
+      />
+    </div>
+  );
 
-      {/* 리셋 컨트롤 바 */}
-      {!splitHidden && (
-        <div className="flex items-center justify-center gap-2 pt-1" aria-label={t('adjust.resetBoth')}>
+  const canOpenAdjust = !splitHidden && (!!fromUrl || !!toUrl);
+
+  return (
+    <div className="flex flex-col gap-2">
+      {!adjustOpen && showOnboardHint && !splitHidden && (
+        <p
+          className="rounded-[var(--radius-md)] bg-[color:var(--color-surface-2)] px-3 py-2 text-center text-[12px] text-[color:var(--color-fg-muted)]"
+          role="note"
+        >
+          {t('adjust.hint')}
+        </p>
+      )}
+
+      <AdjustModeShell
+        open={adjustOpen}
+        side={adjustSide}
+        onSideChange={setAdjustSide}
+        transformA={tFrom}
+        transformB={tTo}
+        onTransformChange={setTransform}
+        hasA={!!fromUrl}
+        hasB={!!toUrl}
+        onApply={applyAdjust}
+        onCancel={() => cancelAdjust(false)}
+      >
+        {imageContainer}
+      </AdjustModeShell>
+
+      {/* 리셋 컨트롤 바 + 조정 진입 */}
+      {!adjustOpen && !splitHidden && (
+        <div className="flex flex-wrap items-center justify-center gap-2 pt-1">
           <button
             type="button"
             onClick={() => resetTransform('A')}
@@ -788,18 +764,38 @@ export function CompareView({ fromUrl, toUrl, fromDate, toDate, angle, splitHidd
           >
             B
           </button>
+          <button
+            type="button"
+            onClick={openAdjust}
+            disabled={!canOpenAdjust}
+            aria-label={t('adjust.enter')}
+            className="ml-1 flex items-center gap-1 rounded-[var(--radius-md)] border border-[color:var(--color-border)] px-3 py-1.5 text-[12px] font-medium text-[color:var(--color-fg)] hover:bg-[color:var(--color-surface-2)] disabled:opacity-40"
+          >
+            <span aria-hidden>✥</span>
+            <span>{t('adjust.enter')}</span>
+          </button>
         </div>
       )}
 
-      {/* aria live region */}
+      {/* aria live region (분할 비율) */}
       <div ref={liveRef} role="status" aria-live="polite" className="sr-only" />
 
-      {splitHidden && (
+      {!adjustOpen && splitHidden && (
         <p
           className="rounded-[var(--radius-md)] bg-[color:var(--color-surface-2)] px-4 py-3 text-center text-[13px] text-[color:var(--color-fg-muted)]"
         >
           {t('empty.sameDate')}
         </p>
+      )}
+
+      {toastMsg && (
+        <div
+          role="status"
+          aria-live="polite"
+          className="pointer-events-none fixed bottom-6 left-1/2 z-50 -translate-x-1/2 rounded-[var(--radius-md)] bg-[color:var(--color-fg)] px-4 py-2 text-[13px] text-[color:var(--color-surface)] shadow-[var(--shadow-sm)]"
+        >
+          {t(`adjust.${toastMsg}`)}
+        </div>
       )}
     </div>
   );
