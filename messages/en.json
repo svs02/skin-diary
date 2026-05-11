@@ -338,13 +338,31 @@
       "future": "Future dates can't be compared"
     },
     "adjust": {
-      "hint": "Long-press then drag to pan, pinch to zoom",
+      "hint": "After zooming in, drag the photo to adjust its position.",
       "zoomIn": "Zoom in",
       "zoomOut": "Zoom out",
       "resetLeft": "Reset left photo",
       "resetRight": "Reset right photo",
       "resetBoth": "Reset both photos",
-      "resetShortcut": "Press 0 to reset"
+      "resetShortcut": "Press 0 to reset",
+      "enter": "Adjust",
+      "title": "Adjusting",
+      "titleSide": "Adjusting · {side}",
+      "apply": "Apply",
+      "cancel": "Cancel",
+      "reset": "Reset",
+      "sideA": "Photo A",
+      "sideB": "Photo B",
+      "zoom": "Zoom",
+      "position": "Position",
+      "up": "Move up",
+      "down": "Move down",
+      "left": "Move left",
+      "right": "Move right",
+      "missingPhoto": "No {angle} photo on this date",
+      "toastCanceled": "Adjustment canceled",
+      "liveLabel": "Zoom {percent}% · Position X {ox} · Y {oy}",
+      "resetThisSide": "Reset this side"
     }
   },
   "marketing": {

@@ -338,13 +338,31 @@
       "future": "미래 날짜는 비교할 수 없어요"
     },
     "adjust": {
-      "hint": "꾹 누른 후 드래그로 위치, 핀치로 크기 조정",
+      "hint": "확대한 뒤 사진을 끌어 위치를 맞춰보세요.",
       "zoomIn": "확대",
       "zoomOut": "축소",
       "resetLeft": "왼쪽 사진 위치 초기화",
       "resetRight": "오른쪽 사진 위치 초기화",
       "resetBoth": "두 사진 모두 초기화",
-      "resetShortcut": "0 키로 초기화"
+      "resetShortcut": "0 키로 초기화",
+      "enter": "조정",
+      "title": "조정 중",
+      "titleSide": "조정 중 · {side}",
+      "apply": "적용",
+      "cancel": "취소",
+      "reset": "원래대로",
+      "sideA": "A 사진",
+      "sideB": "B 사진",
+      "zoom": "확대",
+      "position": "위치",
+      "up": "위로 이동",
+      "down": "아래로 이동",
+      "left": "왼쪽으로 이동",
+      "right": "오른쪽으로 이동",
+      "missingPhoto": "이 날짜에는 {angle} 사진이 없어요",
+      "toastCanceled": "조정 취소됨",
+      "liveLabel": "확대 {percent}% · 위치 X {ox} · Y {oy}",
+      "resetThisSide": "이 측 원래대로"
     }
   },
   "marketing": {
