@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { useTranslations } from 'next-intl';
 import { FirebaseError } from 'firebase/app';
 import { normalizeToSquareJpeg } from '@/lib/image/normalize';
+import { rotateBlob, type RotationDegrees } from '@/lib/image/rotate';
 import {
   PhotoUploadError,
   deleteAnglePhoto,
@@ -25,6 +26,18 @@ const DELETE_COMMIT_MS = 5000;
 type ErrorKey = 'tooLarge' | 'unsupported' | 'upload' | 'load' | 'missing';
 type Transient = { state: 'uploading' } | { state: 'error'; errorKey: ErrorKey };
 
+type PreviewRotation = 0 | RotationDegrees;
+type GalleryPreview = {
+  angle: Angle;
+  blob: Blob;
+  objectUrl: string;
+  rotation: PreviewRotation;
+};
+
+function nextRotation(r: PreviewRotation): PreviewRotation {
+  return ((r + 90) % 360) as PreviewRotation;
+}
+
 /**
  * 3슬롯 사진 입력 + 업로드 오케스트레이터.
  * 부모는 dateKey 변경 시 `key={dateKey}`로 remount 시킬 것 (URL 캐시 초기화 의도).
@@ -43,6 +56,8 @@ export function PhotoCapture({
   const tErr = useTranslations('record.photos.error');
   const tToast = useTranslations('record.photos.toast');
   const tMenu = useTranslations('record.photos.menu');
+  const tCapture = useTranslations('record.capture');
+  const tAngles = useTranslations('record.capture.angle');
   const router = useRouter();
   const toast = useToast();
   const [imageUrls, setImageUrls] = useState<Partial<Record<Angle, string>>>({});
@@ -58,6 +73,10 @@ export function PhotoCapture({
   // optimistic delete 동안 부모의 photos[angle]=true를 가리는 클라이언트-only 상태.
   // 부모 photos prop은 readonly이므로 PhotoCapture 내부에서만 마스킹한다.
   const [pendingDeletes, setPendingDeletes] = useState<Set<Angle>>(new Set());
+  const [preview, setPreview] = useState<GalleryPreview | null>(null);
+  const [previewBusy, setPreviewBusy] = useState(false);
+  const previewRef = useRef<GalleryPreview | null>(null);
+  previewRef.current = preview;
   const lastFileRef = useRef<Partial<Record<Angle, File>>>({});
   const cameraInputRef = useRef<HTMLInputElement | null>(null);
   const galleryInputRef = useRef<HTMLInputElement | null>(null);
@@ -123,13 +142,40 @@ export function PhotoCapture({
     };
   }, []);
 
-  const runUpload = useCallback(
-    async (angle: Angle, file: File) => {
-      lastFileRef.current[angle] = file;
+  const commitUpload = useCallback(
+    async (angle: Angle, blob: Blob) => {
       setTransient((p) => ({ ...p, [angle]: { state: 'uploading' } }));
       // Spec §4.3.c — uploading 토스트 (info 톤)
       toast.info(tToast('uploading'));
+      try {
+        const url = await uploadAnglePhoto(uid, dateKey, angle, blob);
+        await markPhotoUploaded(uid, dateKey, angle);
+        setImageUrls((p) => ({ ...p, [angle]: url }));
+        setTransient((p) => {
+          const { [angle]: _omit, ...rest } = p;
+          void _omit;
+          return rest;
+        });
+        toast.success(tToast('uploaded'));
+        onUploaded(angle);
+      } catch (err) {
+        const errorKey: ErrorKey =
+          err instanceof PhotoUploadError && err.code === 'too-large'
+            ? 'tooLarge'
+            : 'upload';
+        setTransient((p) => ({ ...p, [angle]: { state: 'error', errorKey } }));
+        toast.alert(tToast('failed'), {
+          label: tToast('retry'),
+          onClick: () => commitUpload(angle, blob),
+        });
+      }
+    },
+    [uid, dateKey, onUploaded, toast, tToast],
+  );
 
+  const runUpload = useCallback(
+    async (angle: Angle, file: File) => {
+      lastFileRef.current[angle] = file;
       let blob: Blob;
       try {
         blob = await normalizeToSquareJpeg(file);
@@ -144,34 +190,73 @@ export function PhotoCapture({
         });
         return;
       }
+      await commitUpload(angle, blob);
+    },
+    [commitUpload, toast, tToast],
+  );
 
+  // 갤러리 입력 흐름: normalize → preview 시트 → 회전/사용 확정 → commitUpload
+  const openPreviewFromFile = useCallback(
+    async (angle: Angle, file: File) => {
+      lastFileRef.current[angle] = file;
+      let blob: Blob;
       try {
-        const url = await uploadAnglePhoto(uid, dateKey, angle, blob);
-        await markPhotoUploaded(uid, dateKey, angle);
-        setImageUrls((p) => ({ ...p, [angle]: url }));
-        setTransient((p) => {
-          const { [angle]: _omit, ...rest } = p;
-          void _omit;
-          return rest;
-        });
-        // Spec §4.3.c — uploaded 토스트 (success 톤)
-        toast.success(tToast('uploaded'));
-        onUploaded(angle);
-      } catch (err) {
-        const errorKey: ErrorKey =
-          err instanceof PhotoUploadError && err.code === 'too-large'
-            ? 'tooLarge'
-            : 'upload';
-        setTransient((p) => ({ ...p, [angle]: { state: 'error', errorKey } }));
-        // Spec §4.3.c — failed 토스트 (alert 톤 + 재시도 액션)
+        blob = await normalizeToSquareJpeg(file);
+      } catch {
+        setTransient((p) => ({
+          ...p,
+          [angle]: { state: 'error', errorKey: 'unsupported' },
+        }));
         toast.alert(tToast('failed'), {
           label: tToast('retry'),
           onClick: () => runUpload(angle, file),
         });
+        return;
       }
+      // 기존 preview가 있으면 revoke
+      const prev = previewRef.current;
+      if (prev) URL.revokeObjectURL(prev.objectUrl);
+      const objectUrl = URL.createObjectURL(blob);
+      setPreview({ angle, blob, objectUrl, rotation: 0 });
     },
-    [uid, dateKey, onUploaded, toast, tToast],
+    [runUpload, toast, tToast],
   );
+
+  function rotatePreview() {
+    setPreview((p) => (p ? { ...p, rotation: nextRotation(p.rotation) } : p));
+  }
+
+  function discardPreview() {
+    const p = previewRef.current;
+    if (p) URL.revokeObjectURL(p.objectUrl);
+    setPreview(null);
+  }
+
+  async function confirmPreview() {
+    const p = previewRef.current;
+    if (!p || previewBusy) return;
+    setPreviewBusy(true);
+    try {
+      const finalBlob =
+        p.rotation === 0 ? p.blob : await rotateBlob(p.blob, p.rotation);
+      URL.revokeObjectURL(p.objectUrl);
+      setPreview(null);
+      await commitUpload(p.angle, finalBlob);
+    } catch {
+      // 회전 베이크 실패 시 침묵하지 않고 사용자에게 통지. preview는 유지하여 재시도 가능.
+      toast.alert(tToast('failed'));
+    } finally {
+      setPreviewBusy(false);
+    }
+  }
+
+  // unmount 시 preview blob URL 정리
+  useEffect(() => {
+    return () => {
+      const p = previewRef.current;
+      if (p) URL.revokeObjectURL(p.objectUrl);
+    };
+  }, []);
 
   function deriveSlot(angle: Angle): {
     state: SlotState;
@@ -217,7 +302,7 @@ export function PhotoCapture({
     const angle = pendingAngleRef.current;
     if (file && angle) {
       pendingAngleRef.current = null;
-      runUpload(angle, file);
+      void openPreviewFromFile(angle, file);
     }
   }
 
@@ -383,6 +468,128 @@ export function PhotoCapture({
         onReplace={handleMenuReplace}
         onDelete={handleMenuDelete}
       />
+
+      {preview && (
+        <div
+          role="dialog"
+          aria-modal="true"
+          aria-label={tAngles(preview.angle)}
+          className="fixed inset-0 z-50 flex flex-col"
+          style={{ background: 'var(--color-camera-bg)' }}
+        >
+          <header
+            className="relative z-10 flex items-center justify-between px-4"
+            style={{
+              paddingTop: 'max(env(safe-area-inset-top), 8px)',
+              paddingBottom: 8,
+            }}
+          >
+            <button
+              type="button"
+              aria-label={tCapture('close')}
+              onClick={discardPreview}
+              disabled={previewBusy}
+              className="flex h-11 w-11 items-center justify-center rounded-full text-white disabled:opacity-50"
+              style={{ background: 'rgba(0,0,0,0.32)' }}
+            >
+              <svg
+                width="20"
+                height="20"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                aria-hidden
+              >
+                <path d="M18 6L6 18M6 6l12 12" />
+              </svg>
+            </button>
+            <div
+              className="text-[14px] font-semibold text-white"
+              style={{ textShadow: '0 1px 2px rgba(0,0,0,0.4)' }}
+            >
+              {tAngles(preview.angle)}
+            </div>
+            <button
+              type="button"
+              onClick={rotatePreview}
+              disabled={previewBusy}
+              aria-label={tCapture('rotate.aria')}
+              className="flex h-9 items-center gap-1.5 rounded-full px-3 text-[13px] font-medium text-white disabled:opacity-50"
+              style={{
+                background: 'rgba(0,0,0,0.45)',
+                boxShadow: 'var(--shadow-raised)',
+              }}
+            >
+              <svg
+                width="16"
+                height="16"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="1.8"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                aria-hidden
+              >
+                <path d="M21 12a9 9 0 1 1-3-6.7" />
+                <path d="M21 4v5h-5" />
+              </svg>
+              <span>
+                {preview.rotation === 0
+                  ? tCapture('rotate.label')
+                  : tCapture('rotate.degrees', { deg: preview.rotation })}
+              </span>
+            </button>
+          </header>
+
+          <div className="relative flex flex-1 items-center justify-center px-4">
+            <div className="relative aspect-square w-full max-w-[480px] overflow-hidden rounded-[18px] bg-black">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src={preview.objectUrl}
+                alt={tAngles(preview.angle)}
+                className="absolute inset-0 h-full w-full object-cover"
+                style={{
+                  transform: `rotate(${preview.rotation}deg)`,
+                  transition: 'transform 180ms ease-out',
+                }}
+              />
+            </div>
+          </div>
+
+          <div
+            className="relative z-10 flex flex-col items-center px-4"
+            style={{
+              paddingBottom: 'max(env(safe-area-inset-bottom), 16px)',
+              paddingTop: 24,
+              background:
+                'linear-gradient(to top, rgba(0,0,0,0.55), rgba(0,0,0,0))',
+            }}
+          >
+            <div className="flex w-full max-w-[420px] gap-2">
+              <button
+                type="button"
+                onClick={discardPreview}
+                disabled={previewBusy}
+                className="flex h-[52px] flex-1 items-center justify-center rounded-[12px] text-[15px] font-semibold text-white disabled:opacity-50"
+                style={{ background: 'rgba(255,255,255,0.16)' }}
+              >
+                {tCapture('preview.retake')}
+              </button>
+              <button
+                type="button"
+                onClick={() => void confirmPreview()}
+                disabled={previewBusy}
+                className="flex h-[52px] flex-1 items-center justify-center rounded-[12px] bg-accent text-[15px] font-semibold text-[color:var(--color-surface)] disabled:opacity-60"
+              >
+                {previewBusy ? '…' : tCapture('preview.use')}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </section>
   );
 }

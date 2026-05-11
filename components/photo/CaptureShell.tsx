@@ -11,6 +11,7 @@ import {
 import { useRouter } from 'next/navigation';
 import { useTranslations } from 'next-intl';
 import { normalizeToSquareJpeg } from '@/lib/image/normalize';
+import { rotateBlob, type RotationDegrees } from '@/lib/image/rotate';
 import { uploadAnglePhoto } from '@/lib/storage/upload';
 import { markPhotoUploaded } from '@/lib/firebase/dailyRecord';
 import { useToast } from '@/lib/toast';
@@ -57,10 +58,17 @@ type Phase =
   | 'no-camera'
   | 'in-use';
 
+type Rotation = 0 | RotationDegrees;
+
 type CapturedPreview = {
   blob: Blob;
   objectUrl: string;
+  rotation: Rotation;
 };
+
+function nextRotation(r: Rotation): Rotation {
+  return ((r + 90) % 360) as Rotation;
+}
 
 const VIDEO_CONSTRAINTS_PREFERRED: MediaStreamConstraints = {
   video: {
@@ -399,7 +407,7 @@ export function CaptureShell({
     }
 
     const objectUrl = URL.createObjectURL(normalized);
-    setPreview({ blob: normalized, objectUrl });
+    setPreview({ blob: normalized, objectUrl, rotation: 0 });
     // freeze 동안 stream은 살려둔다 — 다시 찍기 시 즉시 라이브 복귀
   }
 
@@ -408,11 +416,19 @@ export function CaptureShell({
     setPreview(null);
   }
 
+  function rotatePreview() {
+    setPreview((p) => (p ? { ...p, rotation: nextRotation(p.rotation) } : p));
+  }
+
   async function handleUsePhoto() {
     if (!preview || busy) return;
     setBusy(true);
     try {
-      await uploadAnglePhoto(uid, date, angle, preview.blob);
+      const finalBlob =
+        preview.rotation === 0
+          ? preview.blob
+          : await rotateBlob(preview.blob, preview.rotation);
+      await uploadAnglePhoto(uid, date, angle, finalBlob);
       await markPhotoUploaded(uid, date, angle);
       URL.revokeObjectURL(preview.objectUrl);
       stopStream();
@@ -553,7 +569,34 @@ export function CaptureShell({
               src={preview.objectUrl}
               alt={tAngles(angle)}
               className="absolute inset-0 h-full w-full object-cover"
+              style={{
+                transform: `rotate(${preview.rotation}deg)`,
+                transition: 'transform 180ms ease-out',
+              }}
             />
+          )}
+
+          {/* 회전 칩 (preview only) */}
+          {preview && (
+            <button
+              type="button"
+              onClick={rotatePreview}
+              disabled={busy}
+              aria-label={t('rotate.aria')}
+              className="absolute right-3 z-10 flex h-9 items-center gap-1.5 rounded-full px-3 text-[13px] font-medium text-white disabled:opacity-50"
+              style={{
+                top: 'calc(max(env(safe-area-inset-top), 8px) + 56px)',
+                background: 'rgba(0,0,0,0.45)',
+                boxShadow: 'var(--shadow-raised)',
+              }}
+            >
+              <RotateIcon />
+              <span>
+                {preview.rotation === 0
+                  ? t('rotate.label')
+                  : t('rotate.degrees', { deg: preview.rotation })}
+              </span>
+            </button>
           )}
 
           {/* 상단 바 */}
@@ -873,6 +916,25 @@ function SwitchIcon() {
     >
       <path d="M3 7h13l-3-3" />
       <path d="M21 17H8l3 3" />
+    </svg>
+  );
+}
+
+function RotateIcon() {
+  return (
+    <svg
+      width="16"
+      height="16"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.8"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden
+    >
+      <path d="M21 12a9 9 0 1 1-3-6.7" />
+      <path d="M21 4v5h-5" />
     </svg>
   );
 }
