@@ -1,6 +1,7 @@
 'use client';
 
-import { useEffect, useState, type FormEvent } from 'react';
+import { useEffect, useState, type FormEvent, type ReactNode } from 'react';
+import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useTranslations } from 'next-intl';
 import {
@@ -13,7 +14,12 @@ import {
 } from 'firebase/auth';
 import { auth } from '@/lib/firebase/client';
 import { useAuth } from '@/lib/auth/AuthProvider';
-import { ensureUserDoc } from '@/lib/auth/ensureUserDoc';
+import { ensureUserDoc, type ConsentInput } from '@/lib/auth/ensureUserDoc';
+import {
+  LEGAL_PRIVACY_VERSION,
+  LEGAL_SENSITIVE_PHOTO_VERSION,
+  LEGAL_TERMS_VERSION,
+} from '@/lib/legal/versions';
 import { LocaleToggle } from '@/components/LocaleToggle';
 import type { Provider } from '@/types';
 
@@ -26,7 +32,7 @@ function isAuthError(err: unknown): err is AuthError {
 export default function LoginPage() {
   const t = useTranslations('auth.login');
   const router = useRouter();
-  const { user, loading: authLoading } = useAuth();
+  const { user, loading: authLoading, hasFullConsent } = useAuth();
 
   const [mode, setMode] = useState<Mode>('signIn');
   const [email, setEmail] = useState('');
@@ -34,19 +40,58 @@ export default function LoginPage() {
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
-    if (!authLoading && user) router.replace('/today');
-  }, [user, authLoading, router]);
+  // Consent state — only relevant in `signUp` mode. We track each box
+  // individually so the "agree to all" master toggle can flip them in lockstep
+  // without losing the per-item state on partial selection.
+  //
+  // The four boxes correspond 1:1 to the four consent dimensions persisted on
+  // the user doc (see types/index.ts):
+  //   - consentTerms          → termsVersion
+  //   - consentPrivacy        → privacyVersion
+  //   - consentSensitivePhoto → sensitivePhotoVersion
+  //   - consentAge            → ageConfirmed
+  // The sensitive-photo opt-in is KR PIPA-mandated (biometric-adjacent data),
+  // so it lives as a separate checkbox even though the user-facing copy looks
+  // similar to the privacy policy box.
+  const [consentTerms, setConsentTerms] = useState(false);
+  const [consentPrivacy, setConsentPrivacy] = useState(false);
+  const [consentSensitivePhoto, setConsentSensitivePhoto] = useState(false);
+  const [consentAge, setConsentAge] = useState(false);
+  const allConsented =
+    consentTerms && consentPrivacy && consentSensitivePhoto && consentAge;
 
-  const onSuccess = async (provider: Provider) => {
+  const toggleAllConsent = (next: boolean) => {
+    setConsentTerms(next);
+    setConsentPrivacy(next);
+    setConsentSensitivePhoto(next);
+    setConsentAge(next);
+  };
+
+  // Auto-bounce a session that lands on /login. We branch on consent state:
+  //   - hasFullConsent === true  → in-app (`/today`)
+  //   - hasFullConsent === false → consent gate (`/signup/consent`)
+  //   - hasFullConsent === null  → wait (userDoc still loading / not yet
+  //     created); the listener will fire again once the snapshot resolves.
+  useEffect(() => {
+    if (authLoading || !user) return;
+    if (hasFullConsent === true) router.replace('/today');
+    else if (hasFullConsent === false) router.replace('/signup/consent');
+  }, [user, authLoading, hasFullConsent, router]);
+
+  const onSuccess = async (provider: Provider, consent?: ConsentInput) => {
     const current = auth.currentUser;
     if (!current) return;
     await ensureUserDoc({
       uid: current.uid,
       email: current.email,
       provider,
+      consent,
     });
-    router.replace('/today');
+    // Routing is intentionally handled by the auth-state useEffect above,
+    // not here. That effect reads the real-time userDoc snapshot, so it
+    // correctly branches between /today (full consent) and /signup/consent
+    // (deferred — e.g. Google first sign-in). Doing the redirect inline
+    // here would race the userDoc subscription.
   };
 
   const handleGoogle = async () => {
@@ -75,15 +120,24 @@ export default function LoginPage() {
 
   const handleEmailSubmit = async (e: FormEvent) => {
     e.preventDefault();
+    // Defensive guard: the submit button is also disabled when not all consent
+    // checkboxes are ticked, but a user could submit via Enter on an input.
+    if (mode === 'signUp' && !allConsented) return;
     setError(null);
     setSubmitting(true);
     try {
       if (mode === 'signIn') {
         await signInWithEmailAndPassword(auth, email, password);
+        await onSuccess('password');
       } else {
         await createUserWithEmailAndPassword(auth, email, password);
+        await onSuccess('password', {
+          termsVersion: LEGAL_TERMS_VERSION,
+          privacyVersion: LEGAL_PRIVACY_VERSION,
+          sensitivePhotoVersion: LEGAL_SENSITIVE_PHOTO_VERSION,
+          ageConfirmed: true,
+        });
       }
-      await onSuccess('password');
     } catch (err) {
       if (isAuthError(err)) {
         switch (err.code) {
@@ -170,9 +224,74 @@ export default function LoginPage() {
             </p>
           )}
 
+          {mode === 'signUp' && (
+            <fieldset className="mt-1 flex flex-col gap-2 rounded-xl bg-surface-2 p-3 text-[13px] text-fg">
+              <ConsentCheckbox
+                checked={allConsented}
+                onChange={toggleAllConsent}
+                label={t('consent.agreeAll')}
+                emphasized
+              />
+              <div className="h-px bg-[color:var(--color-border)]" />
+              <ConsentCheckbox
+                checked={consentTerms}
+                onChange={setConsentTerms}
+                label={t.rich('consent.terms', {
+                  link: (chunks: ReactNode) => (
+                    <Link
+                      href="/terms"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="underline underline-offset-2 hover:text-[color:var(--color-accent)]"
+                    >
+                      {chunks}
+                    </Link>
+                  ),
+                })}
+              />
+              <ConsentCheckbox
+                checked={consentPrivacy}
+                onChange={setConsentPrivacy}
+                label={t.rich('consent.privacy', {
+                  link: (chunks: ReactNode) => (
+                    <Link
+                      href="/privacy"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="underline underline-offset-2 hover:text-[color:var(--color-accent)]"
+                    >
+                      {chunks}
+                    </Link>
+                  ),
+                })}
+              />
+              <ConsentCheckbox
+                checked={consentSensitivePhoto}
+                onChange={setConsentSensitivePhoto}
+                label={t.rich('consent.sensitivePhoto', {
+                  link: (chunks: ReactNode) => (
+                    <Link
+                      href="/legal/sensitive-photo"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="underline underline-offset-2 hover:text-[color:var(--color-accent)]"
+                    >
+                      {chunks}
+                    </Link>
+                  ),
+                })}
+              />
+              <ConsentCheckbox
+                checked={consentAge}
+                onChange={setConsentAge}
+                label={t('consent.age14')}
+              />
+            </fieldset>
+          )}
+
           <button
             type="submit"
-            disabled={submitting}
+            disabled={submitting || (mode === 'signUp' && !allConsented)}
             className="mt-2 h-12 rounded-full bg-accent text-[14px] font-semibold text-[color:var(--color-accent-text)] transition-colors hover:opacity-90 disabled:opacity-50"
           >
             {mode === 'signIn' ? t('signInButton') : t('signUpButton')}
@@ -184,6 +303,10 @@ export default function LoginPage() {
           onClick={() => {
             setMode((m) => (m === 'signIn' ? 'signUp' : 'signIn'));
             setError(null);
+            // Reset consent on mode toggle: stale checks from a previous
+            // sign-up attempt shouldn't carry forward (could mislead the user
+            // into thinking they've already agreed).
+            toggleAllConsent(false);
           }}
           className="mt-5 text-center text-[12px] text-fg-muted hover:text-fg"
         >
@@ -191,6 +314,34 @@ export default function LoginPage() {
         </button>
       </main>
     </div>
+  );
+}
+
+function ConsentCheckbox({
+  checked,
+  onChange,
+  label,
+  emphasized = false,
+}: {
+  checked: boolean;
+  onChange: (next: boolean) => void;
+  label: ReactNode;
+  emphasized?: boolean;
+}) {
+  return (
+    <label
+      className={`flex cursor-pointer items-center gap-2.5 select-none ${
+        emphasized ? 'font-semibold' : 'text-fg-muted'
+      }`}
+    >
+      <input
+        type="checkbox"
+        checked={checked}
+        onChange={(e) => onChange(e.target.checked)}
+        className="h-4 w-4 shrink-0 accent-[color:var(--color-accent)]"
+      />
+      <span className="leading-snug">{label}</span>
+    </label>
   );
 }
 

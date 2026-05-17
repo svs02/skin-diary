@@ -3,15 +3,14 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useTranslations } from 'next-intl';
-import { FirebaseError } from 'firebase/app';
 import { normalizeToSquareJpeg } from '@/lib/image/normalize';
 import { rotateBlob, type RotationDegrees } from '@/lib/image/rotate';
 import {
   PhotoUploadError,
   deleteAnglePhoto,
-  getAngleDownloadURL,
   uploadAnglePhoto,
 } from '@/lib/storage/upload';
+import { getSignedURL, invalidateSignedURL } from '@/lib/storage/signedUrl';
 import { markPhotoDeleted, markPhotoUploaded } from '@/lib/firebase/dailyRecord';
 import { useToast } from '@/lib/toast';
 import type { Angle } from '@/types';
@@ -105,7 +104,10 @@ export function PhotoCapture({
       if (imageUrlsRef.current[angle]) continue; // 이미 URL 보유
       if (inflightRef.current.has(angle)) continue;
       inflightRef.current.add(angle);
-      getAngleDownloadURL(uid, dateKey, angle)
+      // Signed URL fetch: 200 OK + URL을 받으면 객체 존재 여부와 무관하게 성공.
+      // 객체 누락(404)은 <img onError> 콜백(handleImageError)에서 'missing' 에러로 처리.
+      // 여기서 에러는 네트워크/401 재시도 실패 등 'load' 계열만 발생한다.
+      getSignedURL(dateKey, angle)
         .then((url) => {
           inflightRef.current.delete(angle);
           setImageUrls((p) => ({ ...p, [angle]: url }));
@@ -113,23 +115,35 @@ export function PhotoCapture({
         .catch((err: unknown) => {
           inflightRef.current.delete(angle);
           console.error('[PhotoCapture] URL fetch failed', { angle, dateKey, err });
-          const code =
-            err instanceof FirebaseError
-              ? err.code
-              : (err as { code?: string } | null)?.code;
-          const message =
-            err instanceof Error ? err.message : typeof err === 'string' ? err : '';
-          const isMissing =
-            code === 'storage/object-not-found' ||
-            message.includes('object-not-found');
-          const errorKey: ErrorKey = isMissing ? 'missing' : 'load';
           setTransient((p) => ({
             ...p,
-            [angle]: { state: 'error', errorKey },
+            [angle]: { state: 'error', errorKey: 'load' },
           }));
         });
     }
   }, [uid, dateKey, photos, pendingDeletes]);
+
+  // <img onError> — Signed URL이 200으로 반환된 후 실제 객체 fetch가 404로 실패하는 경우.
+  // 객체 누락 케이스를 'missing'으로 분기하고, stale URL 캐시를 비워 다음 페치에서 재시도 가능하게 한다.
+  const handleImageError = useCallback(
+    (angle: Angle) => {
+      console.warn('[PhotoCapture] image fetch failed (likely missing object)', {
+        angle,
+        dateKey,
+      });
+      invalidateSignedURL(dateKey, angle);
+      setImageUrls((p) => {
+        const { [angle]: _omit, ...rest } = p;
+        void _omit;
+        return rest;
+      });
+      setTransient((p) => ({
+        ...p,
+        [angle]: { state: 'error', errorKey: 'missing' },
+      }));
+    },
+    [dateKey],
+  );
 
   // unmount 시 모든 pending delete commit 타이머 정리 — undo 권한이 사라지므로 즉시 commit하지 않고 단순 cancel.
   // (삭제 의도는 5초 후에만 영속화 — 그 전에 화면을 떠나면 변경 없음으로 간주, UX §5.3 "안 해도 된다" 톤.)
@@ -405,6 +419,7 @@ export function PhotoCapture({
               onEmptyClick={() => openSheet(angle)}
               onPick={(file) => runUpload(angle, file)}
               onMenuOpen={() => setMenu({ open: true, angle })}
+              onImageError={() => handleImageError(angle)}
               onRetry={
                 slot.errorKey
                   ? () => {

@@ -10,7 +10,8 @@ export default function manifest(): MetadataRoute.Manifest {
   return {
     name: 'Skin Diary',
     short_name: 'Skin Diary',
-    description: 'Track your skin, one day at a time.',
+    // manifest 라우트는 build-time 정적이라 locale 분기 불가 — 한국이 주 타겟이므로 ko 고정
+    description: '하루 한 장, 피부를 기록해요. 정면·좌·우 사진과 짧은 메모.',
     start_url: '/',
     scope: '/',
     display: 'standalone',

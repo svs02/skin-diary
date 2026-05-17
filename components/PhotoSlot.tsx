@@ -16,6 +16,7 @@ export function PhotoSlot({
   onRetry,
   onEmptyClick,
   onMenuOpen,
+  onImageError,
 }: {
   angle: Angle;
   state: SlotState;
@@ -30,6 +31,12 @@ export function PhotoSlot({
    * filled 상태가 아니면 호출되지 않는다 (버튼 자체가 렌더되지 않음).
    */
   onMenuOpen?: () => void;
+  /**
+   * Signed URL 기반에서 객체 누락(404 등) 또는 URL 만료 시 <img onError>가 발화하면
+   * 부모가 'missing' 에러로 전환하도록 콜백을 호출한다.
+   * (기존 storage/object-not-found 분기를 onError 콜백으로 이동시킨 흐름)
+   */
+  onImageError?: () => void;
 }) {
   const tAngles = useTranslations('record.angles');
   const tPhotos = useTranslations('record.photos');
@@ -94,12 +101,13 @@ export function PhotoSlot({
         }`}
       >
         {state === 'filled' && imageUrl && (
-          // 동적 Firebase Storage URL — next/image 미사용 (next.config remotePatterns 회피)
+          // 동적 Signed URL — next/image 미사용 (next.config remotePatterns 회피)
           // eslint-disable-next-line @next/next/no-img-element
           <img
             src={imageUrl}
             alt={angleLabel}
             className="absolute inset-0 h-full w-full object-cover"
+            onError={onImageError}
           />
         )}
 

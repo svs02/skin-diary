@@ -6,7 +6,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { useTranslations } from 'next-intl';
 import { useAuth } from '@/lib/auth/AuthProvider';
 import { useRecent60, useStreak } from './useOverviewData';
-import { getAngleDownloadURL } from '@/lib/storage/upload';
+import { fetchSignedURLs } from '@/lib/storage/signedUrl';
 import { pickComparePair } from '@/lib/utils/comparePair';
 
 /**
@@ -39,16 +39,17 @@ export function CompareBlock() {
     let cancelled = false;
     (async () => {
       try {
-        const [a, b] = await Promise.all([
-          getAngleDownloadURL(user.uid, pair.from.date, pair.from.angle),
-          getAngleDownloadURL(user.uid, pair.to.date, pair.to.angle),
+        // batch 호출: 2개 사진 한 번에 요청
+        const map = await fetchSignedURLs([
+          { date: pair.from.date, angle: pair.from.angle },
+          { date: pair.to.date, angle: pair.to.angle },
         ]);
         if (!cancelled) {
-          setOldUrl(a);
-          setNewUrl(b);
+          setOldUrl(map.get(`${pair.from.date}/${pair.from.angle}`)?.url ?? null);
+          setNewUrl(map.get(`${pair.to.date}/${pair.to.angle}`)?.url ?? null);
         }
       } catch {
-        // 객체 누락 시 placeholder 유지
+        // 네트워크/401 재시도 실패 — placeholder 유지
       }
     })();
     return () => {

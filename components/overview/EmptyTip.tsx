@@ -1,32 +1,20 @@
 'use client';
 
-import { useState, useSyncExternalStore } from 'react';
+import { useState } from 'react';
 import { useTranslations } from 'next-intl';
 import { useStreak } from './useOverviewData';
+import {
+  setOverviewTipDismissed,
+  useOverviewTipDismissed,
+} from '@/lib/overview/useOverviewTipDismissed';
 
 /**
  * Empty tip — Streak 0~6일 + dismissed 아닐 때만 노출.
  * 카드 박스 없음(부모 MetaInlineBlock가 surface 제공).
- *  - localStorage 'overviewTipDismissed' === 'true' 시 영구 숨김.
+ *  - dismissed 판정은 `useOverviewTipDismissed` 공용 훅 사용 (부모도 동일 훅으로
+ *    빈 회색 섹션 렌더링 방지).
  *  - dismiss는 24×24 × 아이콘 버튼 (텍스트 링크 폐기).
  */
-
-const STORAGE_KEY = 'overviewTipDismissed';
-
-function getDismissedFromStorage(): boolean {
-  if (typeof window === 'undefined') return false;
-  try {
-    return localStorage.getItem(STORAGE_KEY) === 'true';
-  } catch {
-    return false;
-  }
-}
-
-function subscribe(callback: () => void): () => void {
-  if (typeof window === 'undefined') return () => {};
-  window.addEventListener('storage', callback);
-  return () => window.removeEventListener('storage', callback);
-}
 
 function TipBullet() {
   return (
@@ -41,11 +29,7 @@ export function EmptyTip() {
   const streak = useStreak();
   const t = useTranslations('overview.tip');
 
-  const persistedDismissed = useSyncExternalStore(
-    subscribe,
-    getDismissedFromStorage,
-    () => false,
-  );
+  const persistedDismissed = useOverviewTipDismissed();
   const [sessionDismissed, setSessionDismissed] = useState(false);
 
   if (persistedDismissed || sessionDismissed) return null;
@@ -53,11 +37,7 @@ export function EmptyTip() {
   if (streak >= 7) return null;
 
   function handleDismiss() {
-    try {
-      localStorage.setItem(STORAGE_KEY, 'true');
-    } catch {
-      // ignore
-    }
+    setOverviewTipDismissed();
     setSessionDismissed(true);
   }
 

@@ -57,26 +57,106 @@ service cloud.firestore {
       return v == null || (v is string && v.size() <= maxLen);
     }
 
+    // -- Consent helpers ----------------------------------------------------
+    //
+    // Consent fields (terms*, privacy*, ageConfirmed) are written ONCE — either
+    // at create-time (password sign-up) or via a single deferred→full
+    // transition (Google sign-in followed by /signup/consent gate). After the
+    // transition, every field becomes immutable. A future "re-consent" flow
+    // (new ToS version) will need a dedicated server-mediated path.
+    function consentFields() {
+      return [
+        'termsVersion', 'privacyVersion', 'sensitivePhotoVersion',
+        'ageConfirmed',
+        'termsAgreedAt', 'privacyAgreedAt', 'sensitivePhotoAgreedAt'
+      ];
+    }
+
+    // Consent shape validation. Version strings are pinned to YYYY-MM-DD so an
+    // attacker can't write an opaque "v999" and break the audit trail.
+    //
+    // sensitivePhotoVersion covers the explicit opt-in for storing facial
+    // photos (sensitive personal data under KR PIPA). It is separate from the
+    // generic privacyVersion because the user must be able to refuse photo
+    // collection while still using the lifestyle-only features.
+    function hasFullConsent(data) {
+      return data.termsVersion is string
+             && data.termsVersion.matches('^\\d{4}-\\d{2}-\\d{2}$')
+             && data.privacyVersion is string
+             && data.privacyVersion.matches('^\\d{4}-\\d{2}-\\d{2}$')
+             && data.sensitivePhotoVersion is string
+             && data.sensitivePhotoVersion.matches('^\\d{4}-\\d{2}-\\d{2}$')
+             && data.ageConfirmed == true
+             // Server-stamped via serverTimestamp(); must equal request.time so
+             // a hostile client can't back-date consent.
+             && data.termsAgreedAt == request.time
+             && data.privacyAgreedAt == request.time
+             && data.sensitivePhotoAgreedAt == request.time;
+    }
+    function hasDeferredConsent(data) {
+      return data.termsVersion == null
+             && data.privacyVersion == null
+             && data.sensitivePhotoVersion == null
+             && data.ageConfirmed == null
+             && data.termsAgreedAt == null
+             && data.privacyAgreedAt == null
+             && data.sensitivePhotoAgreedAt == null;
+    }
+
+    // Password sign-up MUST carry full consent — the dedicated sign-up screen
+    // shows the consent checkboxes, so there's no legitimate path that omits
+    // them. A devtools-bypassed client would otherwise be able to register
+    // without agreeing (legal risk). Google sign-in is allowed to defer
+    // because Google's OAuth popup happens before our consent UI; a follow-up
+    // consent gate handles deferred Google users at session-start.
+    function isValidConsentOnCreate(data) {
+      return data.provider == 'password'
+               ? hasFullConsent(data)
+               : (hasFullConsent(data) || hasDeferredConsent(data));
+    }
+
     // -- User profile -------------------------------------------------------
     match /users/{uid} {
       allow read: if isOwner(uid);
 
       allow create: if isOwner(uid)
                     && request.resource.data.keys().hasOnly(
-                         ['uid', 'email', 'provider', 'createdAt']
+                         ['uid', 'email', 'provider', 'createdAt', 'updatedAt',
+                          'termsVersion', 'privacyVersion',
+                          'sensitivePhotoVersion', 'ageConfirmed',
+                          'termsAgreedAt', 'privacyAgreedAt',
+                          'sensitivePhotoAgreedAt']
                        )
                     && request.resource.data.uid == uid
                     && request.resource.data.email is string
+                    && request.resource.data.email.size() > 0
                     && request.resource.data.email == request.auth.token.email
-                    && request.resource.data.provider in ['google', 'password'];
+                    && request.resource.data.provider in ['google', 'password']
+                    && isValidConsentOnCreate(request.resource.data);
 
       allow update: if isOwner(uid)
                     && request.resource.data.keys().hasOnly(
-                         ['uid', 'email', 'provider', 'createdAt']
+                         ['uid', 'email', 'provider', 'createdAt', 'updatedAt',
+                          'termsVersion', 'privacyVersion',
+                          'sensitivePhotoVersion', 'ageConfirmed',
+                          'termsAgreedAt', 'privacyAgreedAt',
+                          'sensitivePhotoAgreedAt']
                        )
                     && request.resource.data.uid == uid
                     && request.resource.data.email == request.auth.token.email
-                    && request.resource.data.provider in ['google', 'password'];
+                    && request.resource.data.provider in ['google', 'password']
+                    // Consent fields: either fully immutable (no-op),
+                    // or a one-shot deferred→full transition. Once any
+                    // consent field is non-null, it can never change.
+                    && (
+                         request.resource.data.diff(resource.data)
+                             .affectedKeys()
+                             .hasAny(consentFields()) == false
+                         || (
+                              hasDeferredConsent(resource.data)
+                              && hasFullConsent(request.resource.data)
+                            )
+                       );
 
       // Profiles are not user-deletable from the client. Account deletion
       // must go through an admin/server flow.
@@ -126,6 +206,25 @@ service cloud.firestore {
         // wipe). Use update with cleared fields if a "reset" UX is needed.
         allow delete: if false;
       }
+    }
+
+    // -- Audit log ----------------------------------------------------------
+    //
+    // Top-level append-only `audit` collection. Server (Admin SDK) is the only
+    // writer; clients never write. Each document carries `uid` so the owner can
+    // read their own activity history, but no one — including the user — can
+    // mutate or delete entries. Operator (single-tenant maker) is intentionally
+    // also subject to these rules: a cross-user query for incident response
+    // must go through Admin SDK (server-side), not the client SDK.
+    //
+    // Document shape (enforced by server, not rules):
+    //   { uid, event, occurredAt, source: 'client'|'server', meta: map }
+    match /audit/{auditId} {
+      // Owner may read own events. resource.data.uid must match auth uid.
+      allow read: if request.auth != null
+                  && resource.data.uid == request.auth.uid;
+      // Clients can NEVER write. Server uses Admin SDK which bypasses rules.
+      allow write: if false;
     }
 
     // Default deny for anything else.

@@ -221,3 +221,82 @@ users/{uid}/dailyRecords/{yyyy-mm-dd}
 
 ### 8.4 자기검열
 실질 작업 시 트리거가 해당하면 Agent 도구 호출이 우선이다. 호출하지 않으면 응답 첫 줄에 `에이전트 미호출 사유: <이유>` 명시. 정당한 예외: 단일 typo 수정, 사용자의 명시적 비활성 지시, 순수 질의응답.
+
+---
+
+## 9. 사진 접근 보호 정책 (Phase 1 — 권장 수준)
+
+### 9.1 원칙
+- 사진은 PIPA §23 **민감정보(신체 특징·건강 정보)**, GDPR Art.9 **special category data**로 취급
+- E2E 암호화는 Phase 2 로드맵 — 현재는 정책적 통제 + 외부 URL 노출 차단 + 감사 로깅의 다중 방어
+
+### 9.2 클라이언트 SDK read 차단
+- `storage.rules`에서 `allow read: if false` — 클라이언트 SDK로 사진 객체 직접 read 불가
+- 모든 사진 read는 서버 함수 `POST /api/photo/signed-url` 경유
+- 발급된 Signed URL은 **10분 TTL**, V4 서명, 클라이언트 인메모리 캐시만(localStorage 금지)
+
+### 9.3 운영자 접근 제한
+- 운영자 개인 GCP 계정에 Storage·Firestore 직접 접근 Role을 **두지 않는다**
+- 정당 사유 발생 시 GCP Privileged Access Manager(PAM)의 `emergency-storage-read` grant로 **최대 2시간 한정** 일시 부여
+- 모든 grant 생성·사용은 Cloud Audit Log에 자동 기록
+
+### 9.4 감사 로깅 (이중 운영)
+- 애플리케이션: Firestore `audit/{autoId}` (사용자가 본인 이력 조회 가능)
+- 인프라: GCP Cloud Audit Logs Data Access Log (Storage·Firestore DATA_READ/WRITE)
+- 보존 최소 3년 (PIPA 안전성확보조치 고시 §8 권고)
+
+### 9.5 서비스 계정 분리 (prod)
+- `sa-signed-url@…`: Signed URL 발급 hot path. `roles/iam.serviceAccountTokenCreator` 자기 자신 한정. Storage 객체 직접 권한 **없음**
+- `sa-user-deletion@…`: 회원 탈퇴 cold path. `roles/storage.objectAdmin` + `roles/datastore.user` (버킷 prefix Condition)
+- 키 분리로 한쪽 노출 시 영향 범위 격리
+
+### 9.6 금지 사항
+- 클라이언트 SDK `getDownloadURL()` 호출 ❌ (Storage Rules로 원천 차단)
+- 운영자 개인계정에 Storage Role 상시 부여 ❌
+- Signed URL을 localStorage/sessionStorage 저장 ❌ (자격증명 취급)
+- 감사 로그 비활성화 ❌
+
+---
+
+## 10. 가입 동의 정책
+
+### 10.1 원칙
+- 사진 수집은 본 서비스 **핵심 기능(피부 변화 기록·비교)**의 필수 항목이므로, 민감정보 동의를 **필수 동의 항목**으로 묶는다 (PIPA §22·§39의2 정당화 근거)
+- 동의 완료 전까지 서비스 사용 불가 — 사진 외 기능(메모·식습관)도 동일하게 차단
+- CLAUDE.md §5.3 "모든 입력은 선택 사항"은 **기록 입력 단계** 원칙으로, 가입 동의와 별개
+
+### 10.2 동의 항목 (4개, 필수 3 + 선택 1)
+1. `[필수]` 서비스 이용약관
+2. `[필수]` 개인정보 수집·이용 (이메일·uid)
+3. `[필수]` 민감정보(얼굴 사진) 수집·이용 (E2E 미적용 한계 고지 포함)
+4. `[선택]` 마케팅 알림
+
+체크박스는 **모두 기본 비체크**. 필수 미체크 시 가입 버튼 비활성.
+
+### 10.3 이메일·비밀번호 가입
+- 회원가입 화면 자체에 4개 체크박스 노출
+- 모두(또는 필수만) 체크 후 가입 → `users/{uid}.consentStatus = 'agreed'`
+
+### 10.4 Google OAuth 가입
+- OAuth 인증 직후 `consentStatus = 'pending'` 상태로 Firestore 생성
+- AuthContext가 `pending` 감지 시 **즉시 `/signup/consent`로 강제 라우팅**
+- 동의 페이지 이탈(뒤로가기·창 닫기·취소) 시 `signOut()` + `POST /api/account/abandon-signup` 호출 → Auth 사용자 + Firestore 문서 즉시 삭제
+
+### 10.5 동의 상태 스키마
+- `users/{uid}.consentStatus: 'pending' | 'agreed' | 'withdrawn'`
+- `users/{uid}/consents/{policyVersion}` 서브컬렉션에 동의 시점·항목·채널 기록
+- 향후 처리방침 개정 시 `consentStatus = 'pending'`으로 일괄 전환 → 재로그인 시 재동의
+
+### 10.6 미들웨어 가드
+- `consentStatus !== 'agreed'`인 사용자는 `/signup/consent`·`/login`·`/signup` 외 모든 경로 차단
+- Signed URL Function도 토큰 검증 후 `consentStatus` 확인 → `pending`이면 403
+
+### 10.7 동의 철회
+- 마이페이지 "민감정보 동의 철회" = 사실상 탈퇴 (사진이 핵심 기능)
+- 기존 `/api/account/delete` 흐름 재사용, 경고 모달 후 재확인
+
+### 10.8 금지 사항
+- 일괄 "전체 동의" 한 번 클릭으로 필수·선택 구분 없이 처리 ❌
+- 기본 체크된 상태로 노출 ❌
+- 동의 거부 후 일부 기능만 사용 가능하게 우회 ❌ (현 정책에서는 모든 기능 차단)
+- 동의 기록 누락 ❌ (감사 추적 필수)

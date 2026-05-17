@@ -6,7 +6,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { useTranslations } from 'next-intl';
 import { useAuth } from '@/lib/auth/AuthProvider';
 import { useRecent60 } from './useOverviewData';
-import { getAngleDownloadURL } from '@/lib/storage/upload';
+import { fetchSignedURLs } from '@/lib/storage/signedUrl';
 import { pickFirstAngle } from '@/lib/utils/comparePair';
 import { todayKey } from '@/lib/utils/dateKey';
 import type { Angle } from '@/types';
@@ -54,19 +54,28 @@ export function RecentGalleryBlock() {
 
   useEffect(() => {
     if (!user || !candidates) return;
+    // candidates가 비면 fetch 없이 종료 — resolved 초기값([])이 그대로 유지된다.
+    if (candidates.length === 0) return;
     let cancelled = false;
-    Promise.all(
-      candidates.map(async (c) => {
-        try {
-          const url = await getAngleDownloadURL(user.uid, c.date, c.angle);
-          return { ...c, url } as Item;
-        } catch {
-          return { ...c, url: null } as Item;
+    (async () => {
+      try {
+        // 그리드 전체를 한 번의 batch 호출로 처리 (최대 6개)
+        const map = await fetchSignedURLs(
+          candidates.map((c) => ({ date: c.date, angle: c.angle })),
+        );
+        if (cancelled) return;
+        const items: Item[] = candidates.map((c) => ({
+          ...c,
+          url: map.get(`${c.date}/${c.angle}`)?.url ?? null,
+        }));
+        setResolved(items);
+      } catch {
+        // 네트워크/401 재시도 실패 — 전부 placeholder
+        if (!cancelled) {
+          setResolved(candidates.map((c) => ({ ...c, url: null }) as Item));
         }
-      }),
-    ).then((items) => {
-      if (!cancelled) setResolved(items);
-    });
+      }
+    })();
     return () => {
       cancelled = true;
     };

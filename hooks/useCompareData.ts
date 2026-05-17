@@ -2,7 +2,7 @@
 
 import useSWR from 'swr';
 import { getDailyRecord } from '@/lib/firebase/dailyRecord';
-import { getAngleDownloadURL } from '@/lib/storage/upload';
+import { fetchSignedURLs } from '@/lib/storage/signedUrl';
 import type { Angle, DailyRecord } from '@/types';
 
 /**
@@ -10,26 +10,54 @@ import type { Angle, DailyRecord } from '@/types';
  *
  * SWR 키 네임스페이스:
  *   ['compare/record', uid, dateKey]
- *   ['compare/photoUrl', uid, dateKey, angle]
+ *   ['compare/photoUrls', uid, fromKey, toKey, angle]  // batch fetch 키
  *
  * 가드:
  *  - uid가 null이면 모든 키를 null (자동 비활성)
- *  - photoUrl 페치는 record가 해당 angle의 사진을 갖고 있을 때만 호출.
- *    그 외에는 url=null 반환 (storage/object-not-found 노이즈 방지).
+ *  - photoUrl 페치는 두 record가 모두 해당 angle의 사진을 갖고 있을 때 batch 호출.
+ *    한쪽만 있는 경우는 그 한쪽만 요청. 둘 다 없으면 키 null.
+ *  - 404 분기는 더 이상 fetcher에서 처리하지 않음 — <img onError>가 처리.
  */
 
 type RecordKey = readonly ['compare/record', string, string];
-type PhotoUrlKey = readonly ['compare/photoUrl', string, string, Angle];
+type PhotoUrlsKey = readonly [
+  'compare/photoUrls',
+  string,
+  string,
+  string,
+  Angle,
+  /* fromHas */ boolean,
+  /* toHas */ boolean,
+];
 
 async function recordFetcher([, uid, dateKey]: RecordKey): Promise<DailyRecord | null> {
   return getDailyRecord(uid, dateKey);
 }
 
-async function photoUrlFetcher([, uid, dateKey, angle]: PhotoUrlKey): Promise<string | null> {
+async function photoUrlsFetcher([
+  ,
+  ,
+  fromKey,
+  toKey,
+  angle,
+  fromHas,
+  toHas,
+]: PhotoUrlsKey): Promise<{ from: string | null; to: string | null }> {
+  const items: { date: string; angle: Angle }[] = [];
+  if (fromHas) items.push({ date: fromKey, angle });
+  if (toHas) items.push({ date: toKey, angle });
+  if (items.length === 0) return { from: null, to: null };
+
   try {
-    return await getAngleDownloadURL(uid, dateKey, angle);
+    const map = await fetchSignedURLs(items);
+    return {
+      from: fromHas ? (map.get(`${fromKey}/${angle}`)?.url ?? null) : null,
+      to: toHas ? (map.get(`${toKey}/${angle}`)?.url ?? null) : null,
+    };
   } catch {
-    return null;
+    // batch 실패 시 양쪽 모두 placeholder. (개별 404는 새 헬퍼 흐름에서 발생하지 않음 — 200+URL,
+    // 객체 누락은 호출부 <img onError>가 처리.)
+    return { from: null, to: null };
   }
 }
 
@@ -76,31 +104,35 @@ export function useCompareData(
   const fromHasPhoto = !!fromRecord.data?.photos?.[angle];
   const toHasPhoto = !!toRecord.data?.photos?.[angle];
 
-  const fromUrlKey: PhotoUrlKey | null =
-    uid && fromHasPhoto ? (['compare/photoUrl', uid, fromKey, angle] as const) : null;
-  const toUrlKey: PhotoUrlKey | null =
-    uid && toHasPhoto ? (['compare/photoUrl', uid, toKey, angle] as const) : null;
+  // batch key: from/to 둘 중 하나라도 있으면 활성화. 둘 다 없으면 null.
+  const urlsKey: PhotoUrlsKey | null =
+    uid && (fromHasPhoto || toHasPhoto)
+      ? ([
+          'compare/photoUrls',
+          uid,
+          fromKey,
+          toKey,
+          angle,
+          fromHasPhoto,
+          toHasPhoto,
+        ] as const)
+      : null;
 
-  const fromUrl = useSWR<string | null>(
-    fromUrlKey,
-    (key) => photoUrlFetcher(key as PhotoUrlKey),
+  const urls = useSWR<{ from: string | null; to: string | null }>(
+    urlsKey,
+    (key) => photoUrlsFetcher(key as PhotoUrlsKey),
     { revalidateOnFocus: false, dedupingInterval: 30_000 },
   );
-  const toUrl = useSWR<string | null>(
-    toUrlKey,
-    (key) => photoUrlFetcher(key as PhotoUrlKey),
-    { revalidateOnFocus: false, dedupingInterval: 30_000 },
-  );
 
-  // record는 페치 중일 수 있고, 해당 angle 사진이 있어야만 url 페치.
-  // 사진이 없는 경우 url=null로 즉시 결정 (loading 아님).
-  const fromUrlResolved: string | null | undefined = fromHasPhoto ? fromUrl.data : null;
-  const toUrlResolved: string | null | undefined = toHasPhoto ? toUrl.data : null;
+  // 사진이 없는 쪽은 url=null로 즉시 결정 (loading 아님).
+  const fromUrlResolved: string | null | undefined = fromHasPhoto
+    ? urls.data?.from
+    : null;
+  const toUrlResolved: string | null | undefined = toHasPhoto ? urls.data?.to : null;
 
   const isLoading =
     (uid && (fromRecord.isLoading || toRecord.isLoading)) ||
-    (fromHasPhoto && fromUrl.isLoading) ||
-    (toHasPhoto && toUrl.isLoading) ||
+    ((fromHasPhoto || toHasPhoto) && urls.isLoading) ||
     false;
 
   return {

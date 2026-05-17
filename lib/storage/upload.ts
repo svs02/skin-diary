@@ -1,6 +1,8 @@
-import { deleteObject, getDownloadURL, ref, uploadBytes } from 'firebase/storage';
+import { deleteObject, ref, uploadBytes } from 'firebase/storage';
 import { storage } from '@/lib/firebase/client';
+import { recordPhotoAudit } from '@/lib/audit/client';
 import { isFuture, isValidDateKey } from '@/lib/utils/dateKey';
+import { getSignedURL, invalidateSignedURL } from './signedUrl';
 import type { Angle } from '@/types';
 
 // DESIGN.md §2.3: Storage Rules의 500KB 한계와 동일.
@@ -62,7 +64,13 @@ export async function uploadAnglePhoto(
       contentType: 'image/jpeg',
       cacheControl: 'public,max-age=31536000,immutable',
     });
-    return await getDownloadURL(objectRef);
+    // 업로드 직후 stale 캐시 제거 후 새 Signed URL 발급.
+    // (캐시에는 보통 미스 상태이지만, 덮어쓰기 시 stale entry가 남아있을 수 있어 방어적 invalidate)
+    invalidateSignedURL(dateKey, angle);
+    // 감사 기록 — fire-and-forget. 실패가 업로드 성공 흐름을 막지 않도록 await하지 않는다.
+    // (getSignedURL은 audit와 무관하게 진행)
+    void recordPhotoAudit('photo.upload', dateKey, angle);
+    return await getSignedURL(dateKey, angle);
   } catch (err) {
     throw new PhotoUploadError(
       'storage',
@@ -72,15 +80,20 @@ export async function uploadAnglePhoto(
 }
 
 /**
- * 이미 업로드된 angle 사진의 downloadURL 조회. 슬롯 mount 시 썸네일 표시용.
- * 객체가 없으면 storage/object-not-found 에러가 던져진다 — 호출부에서 분기.
+ * 이미 업로드된 angle 사진의 read URL 조회. 슬롯 mount 시 썸네일 표시용.
+ *
+ * 내부적으로 서버 발급 Signed URL을 사용하므로 객체 존재 여부는 200 OK로 응답된다.
+ * 객체 누락 판정은 호출부의 <img onError> 콜백에서 수행한다.
+ *
+ * uid 파라미터는 시그니처 호환을 위해 유지하나, 서버가 ID 토큰에서 uid를 추출하므로
+ * 내부에서는 사용하지 않는다.
  */
 export async function getAngleDownloadURL(
-  uid: string,
+  _uid: string,
   dateKey: string,
   angle: Angle,
 ): Promise<string> {
-  return getDownloadURL(ref(storage, anglePath(uid, dateKey, angle)));
+  return getSignedURL(dateKey, angle);
 }
 
 /**
@@ -106,9 +119,18 @@ export async function deleteAnglePhoto(
   const objectRef = ref(storage, anglePath(uid, dateKey, angle));
   try {
     await deleteObject(objectRef);
+    // 삭제 후 stale Signed URL이 1시간 동안 유효하므로 캐시는 즉시 제거.
+    // (서버가 발급한 URL 자체는 GCS에서 만료되기 전까지 살아있으나, 클라이언트가 재요청해도
+    //  객체가 없으면 404가 반환되므로 다음 fetch에서 자연스럽게 빈 슬롯으로 처리된다.)
+    invalidateSignedURL(dateKey, angle);
+    // 감사 기록 — fire-and-forget.
+    void recordPhotoAudit('photo.delete', dateKey, angle);
   } catch (err) {
     const code = (err as { code?: string } | null)?.code;
     if (code === 'storage/object-not-found') {
+      invalidateSignedURL(dateKey, angle);
+      // 멱등 케이스도 사용자가 "삭제" 의도를 발동한 것이므로 감사에 남긴다.
+      void recordPhotoAudit('photo.delete', dateKey, angle);
       return; // 멱등: 이미 삭제됨
     }
     throw new PhotoUploadError(

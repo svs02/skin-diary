@@ -1,5 +1,12 @@
 import { NextResponse } from 'next/server';
-import { adminAuth, adminDb, adminStorage } from '@/lib/firebase/admin';
+import { adminAuth } from '@/lib/firebase/admin';
+import { recordAuditEvent } from '@/lib/audit/server';
+import {
+  deleteAllDailyRecords,
+  deleteAllStorageObjects,
+  deleteAuthUser,
+  deleteUserDoc,
+} from '@/lib/firebase/adminDelete';
 
 /**
  * POST /api/account/delete
@@ -40,7 +47,6 @@ export const runtime = 'nodejs'; // Edge 런타임 불가 (firebase-admin은 Nod
 export const dynamic = 'force-dynamic';
 
 const REAUTH_WINDOW_SECONDS = 300; // 5분
-const BATCH_SIZE = 500; // Firestore batch 한도
 
 type Stage = 'dailyRecords' | 'userDoc' | 'storage' | 'auth';
 
@@ -53,53 +59,6 @@ function extractBearerToken(req: Request): string | null {
   if (!header) return null;
   const match = header.match(/^Bearer\s+(.+)$/i);
   return match?.[1]?.trim() || null;
-}
-
-/**
- * users/{uid}/dailyRecords 하위 모든 문서를 BATCH_SIZE씩 삭제.
- * select() 없이 ID만 필요한 쿼리는 Admin SDK가 내부적으로 효율적으로 처리.
- */
-async function deleteAllDailyRecords(uid: string): Promise<void> {
-  const db = adminDb();
-  const colRef = db.collection('users').doc(uid).collection('dailyRecords');
-
-  // 무한 루프 방지 — 비정상적으로 큰 컬렉션은 조기 차단 (실제 도메인상 365 * N년 수준)
-  // 안전 상한 50,000개. 초과 시 명시적 에러로 운영자가 인지하도록 함.
-  let totalDeleted = 0;
-  const safetyMax = 50_000;
-
-  while (true) {
-    const snap = await colRef.limit(BATCH_SIZE).get();
-    if (snap.empty) return;
-
-    const batch = db.batch();
-    snap.docs.forEach((d) => batch.delete(d.ref));
-    await batch.commit();
-
-    totalDeleted += snap.size;
-    if (snap.size < BATCH_SIZE) return; // 마지막 페이지
-
-    if (totalDeleted > safetyMax) {
-      throw new Error(
-        `dailyRecords delete exceeded safety cap (${safetyMax}). Manual cleanup required.`,
-      );
-    }
-  }
-}
-
-async function deleteUserDoc(uid: string): Promise<void> {
-  await adminDb().collection('users').doc(uid).delete();
-}
-
-async function deleteAllStorageObjects(uid: string): Promise<void> {
-  const bucket = adminStorage().bucket();
-  // prefix 끝 슬래시 필수 — `${uid}/` 가 없으면 동일 prefix를 가진 다른 uid까지 매칭될 위험.
-  // (Firebase uid는 충돌하지 않지만 방어적으로 명시)
-  await bucket.deleteFiles({ prefix: `${uid}/`, force: true });
-}
-
-async function deleteAuthUser(uid: string): Promise<void> {
-  await adminAuth().deleteUser(uid);
 }
 
 export async function POST(req: Request) {
@@ -203,6 +162,15 @@ export async function POST(req: Request) {
       completed,
     });
   }
+
+  // 감사 기록 — Auth/사용자 문서가 모두 사라졌으므로 사용자 본인은 더 이상 이 로그를
+  // 조회할 수 없다(보안 룰의 owner read가 막힘). 이는 의도된 동작: 사고/소송 추적은
+  // 운영자가 Admin SDK로 cross-uid 쿼리하여 확보한다. 최상위 audit 컬렉션을 택한 이유.
+  await recordAuditEvent({
+    uid,
+    event: 'account.deleted',
+    meta: { stages: completed.length },
+  });
 
   return NextResponse.json({ deleted: true }, { status: 200 });
 }

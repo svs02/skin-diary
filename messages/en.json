@@ -29,7 +29,25 @@
       "errorGeneric": "Something went wrong. Please try again.",
       "errorInvalidCredentials": "Invalid email or password.",
       "errorEmailInUse": "This email is already registered.",
-      "switchToSignInCta": "Go to sign in"
+      "switchToSignInCta": "Go to sign in",
+      "consent": {
+        "agreeAll": "Agree to all",
+        "terms": "[Required] I agree to the <link>Terms of Service</link>",
+        "privacy": "[Required] I agree to the <link>Privacy Policy</link>",
+        "sensitivePhoto": "[Required] Sensitive photo (face image) collection & use — <link>details</link>",
+        "age14": "[Required] I am 14 years or older"
+      }
+    }
+  },
+  "signup": {
+    "consent": {
+      "title": "Finish signing up",
+      "subtitle": "We need your consent before you can start recording.",
+      "submit": "Agree and continue",
+      "abandon": "Cancel sign-up",
+      "abandonConfirm": "Cancel sign-up? The account you just created will be deleted.",
+      "abandonError": "Cancellation failed. Please try again in a moment.",
+      "loading": "Processing..."
     }
   },
   "record": {
@@ -441,9 +459,56 @@
     }
   },
   "legal": {
+    "sensitivePhoto": {
+      "title": "Sensitive photo (face image) consent",
+      "lastUpdated": "Last updated: 2026-05-15",
+      "summary": {
+        "title": "At a glance",
+        "items": [
+          "Face photos (1024×1024 JPG) are classified as sensitive personal data",
+          "Used only to preserve and compare your own skin diary — no ads, AI training, or sharing",
+          "End-to-end encryption is not yet applied; the maker can technically decrypt your photos",
+          "Deletion is permanent on request (backups auto-purge within 30 days)"
+        ]
+      },
+      "sections": [
+        {
+          "title": "1. What we collect",
+          "body": "One or more face photos (front, left, right — uploaded at your discretion). Each photo is normalized client-side to a 1:1 1024×1024 JPG before upload, and EXIF location data is stripped."
+        },
+        {
+          "title": "2. Purpose of use",
+          "body": "Collected photos are used solely to record and compare your own skin changes over time (overlay slider, side-by-side view). They are never used for:\n\n- Training AI or machine-learning models\n- Advertising, behavioral analytics, or external analytics tools\n- Sale, sharing, or third-party access"
+        },
+        {
+          "title": "3. Storage and security",
+          "body": "Photos are stored in Google Firebase Cloud Storage. Transit is encrypted with TLS (HTTPS), and at-rest data uses Google-managed AES-256 server-side encryption by default. Firebase Storage Security Rules restrict access so only your account can read your photos."
+        },
+        {
+          "title": "4. Who can access your photos",
+          "body": "Access is limited to two parties:\n\n- You (when signed in to your own account)\n- The service maker (info@skindiary.net) — only for legitimate reasons such as incident response or legal obligations. All maker access is recorded in audit logs."
+        },
+        {
+          "title": "5. Important limitation — no end-to-end encryption",
+          "body": "**End-to-end encryption (E2E) is not currently applied.** The maker can technically decrypt and view your photos. Maker access is bound by the operational policy in section 4 and recorded in audit logs, but the control is policy-based, not cryptographic.\n\nEnd-to-end encryption is planned for a future release; when introduced, we will request your consent again."
+        },
+        {
+          "title": "6. Retention",
+          "body": "Photos are permanently deleted as soon as you delete them individually or delete your account. Due to cloud-infrastructure properties, residual copies may briefly persist in Firebase backups and caches, but Google's retention policy purges them within 30 days."
+        },
+        {
+          "title": "7. Refusal and withdrawal",
+          "body": "This sensitive-data consent is required to upload any photo. Without it, the photo recording feature cannot be used (lifestyle-only mode is planned). After consenting, you may withdraw any time by deleting individual photos or your account."
+        },
+        {
+          "title": "8. Contact",
+          "body": "For questions about sensitive data handling, contact info@skindiary.net."
+        }
+      ]
+    },
     "privacy": {
       "title": "Privacy Policy",
-      "lastUpdated": "Last updated: 2026-05-09",
+      "lastUpdated": "Last updated: 2026-05-15",
       "summary": {
         "title": "At a glance",
         "items": [
@@ -464,7 +529,7 @@
         },
         {
           "title": "3. Storage and retention",
-          "body": "Data is stored on Google Firebase (Firebase Authentication, Cloud Firestore, and Cloud Storage). When you delete your account or an individual record, the data is permanently removed. Any residual copies on backup media are rotated out within 30 days."
+          "body": "Data is stored on Google Firebase (Firebase Authentication, Cloud Firestore, and Cloud Storage). When you delete your account or an individual record, the data is permanently removed. Due to the technical nature of cloud infrastructure, some data may temporarily persist in provider-side system logs or short-term caches, and is automatically purged according to Google's retention policies."
         },
         {
           "title": "4. Third parties and processors",
@@ -488,7 +553,7 @@
         },
         {
           "title": "9. Contact",
-          "body": "For privacy questions, contact svs02po@gmail.com. Skin Diary is a beta service run by a single maker, so replies may take a few days."
+          "body": "For privacy questions, contact info@skindiary.net. Skin Diary is a beta service run by a single maker, so replies may take a few days."
         }
       ]
     },
@@ -539,7 +604,7 @@
         },
         {
           "title": "9. Contact",
-          "body": "For questions about these terms, contact svs02po@gmail.com."
+          "body": "For questions about these terms, contact info@skindiary.net."
         }
       ]
     }

@@ -1,6 +1,9 @@
 import { getTranslations } from 'next-intl/server';
 
-type LegalNamespace = 'legal.privacy' | 'legal.terms';
+type LegalNamespace =
+  | 'legal.privacy'
+  | 'legal.terms'
+  | 'legal.sensitivePhoto';
 
 type Section = { title: string; body: string };
 

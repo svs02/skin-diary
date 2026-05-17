@@ -29,9 +29,15 @@ service firebase.storage {
 
     // -- Daily photos -------------------------------------------------------
     match /{uid}/{date}/{filename} {
-      // Read scoped to owner. (Future: shared/compare-link feature would
-      // require revisiting this — track in DESIGN.md before relaxing.)
-      allow read: if isOwner(uid);
+      // Read is blocked at the client SDK level (CLAUDE.md §9.2).
+      // All photo reads MUST go through POST /api/photo/signed-url, which
+      // uses Admin SDK to issue a short-lived V4 signed URL (10-min TTL).
+      // Rationale:
+      //  - Client `getDownloadURL()` returns a long-lived public URL that,
+      //    once leaked (chat, CDN, logs), grants permanent access.
+      //  - Server-mediated signed URLs let us scope to TTL, enforce
+      //    consent/owner re-checks, and log access centrally.
+      allow read: if false;
 
       allow write: if isOwner(uid)
                    && isValidDate(date)

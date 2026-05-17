@@ -6,7 +6,7 @@ import { useEffect, useState } from 'react';
 import { useTranslations } from 'next-intl';
 import { useAuth } from '@/lib/auth/AuthProvider';
 import { useTodayRecord } from './useOverviewData';
-import { getAngleDownloadURL } from '@/lib/storage/upload';
+import { getSignedURL } from '@/lib/storage/signedUrl';
 import { pickFirstAngle } from '@/lib/utils/comparePair';
 import { todayKey } from '@/lib/utils/dateKey';
 import type { Angle } from '@/types';
@@ -29,12 +29,13 @@ export function HeroPhoto() {
   useEffect(() => {
     if (!user || !angle) return;
     let cancelled = false;
-    getAngleDownloadURL(user.uid, date, angle)
+    getSignedURL(date, angle)
       .then((u) => {
         if (!cancelled) setUrl(u);
       })
       .catch(() => {
-        // 객체 누락 등 — placeholder 유지
+        // 네트워크/401 재시도 실패 — placeholder 유지.
+        // (객체 누락은 200 OK + URL 반환 후 <img onError>에서 처리됨)
       });
     return () => {
       cancelled = true;
