@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { adminAuth } from '@/lib/firebase/admin';
+import { withAuth } from '@/lib/api/auth';
 import { recordAuditEvent } from '@/lib/audit/server';
 import {
   deleteAllDailyRecords,
@@ -13,10 +13,14 @@ import {
  *
  * 사용자 본인이 자신의 계정과 모든 데이터를 영구 삭제한다.
  *
- * 인증:
+ * 인증 (withAuth wrapper):
  *   Authorization: Bearer <Firebase ID Token>
  *   - verifyIdToken(token, true) — revoked check 포함
+ *
+ * 추가 검증 (인라인):
  *   - auth_time 5분 이내 — 재인증 강제 (REAUTH_REQUIRED)
+ *   - consent 게이트는 적용하지 않는다 — 동의 철회 = 탈퇴이므로 pending 사용자도
+ *     자기 데이터를 정리할 수 있어야 한다.
  *
  * 본문 (JSON):
  *   { "confirm": "DELETE_MY_ACCOUNT" }
@@ -43,32 +47,24 @@ import {
  *   사용량 증가 시 Upstash Ratelimit 등 외부 의존성 추가 검토.
  */
 
-export const runtime = 'nodejs'; // Edge 런타임 불가 (firebase-admin은 Node 전용)
+export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 
 const REAUTH_WINDOW_SECONDS = 300; // 5분
 
 type Stage = 'dailyRecords' | 'userDoc' | 'storage' | 'auth';
 
+// Account-mutation responses must never be cached — leaking even error states
+// (REAUTH_REQUIRED vs INVALID_TOKEN) to an intermediary would be a privacy
+// regression.
+const NO_STORE_HEADERS = { 'Cache-Control': 'no-store, private' } as const;
+
 function jsonError(status: number, body: Record<string, unknown>) {
-  return NextResponse.json(body, { status });
+  return NextResponse.json(body, { status, headers: NO_STORE_HEADERS });
 }
 
-function extractBearerToken(req: Request): string | null {
-  const header = req.headers.get('authorization') ?? req.headers.get('Authorization');
-  if (!header) return null;
-  const match = header.match(/^Bearer\s+(.+)$/i);
-  return match?.[1]?.trim() || null;
-}
-
-export async function POST(req: Request) {
-  // 1) 토큰 추출
-  const token = extractBearerToken(req);
-  if (!token) {
-    return jsonError(401, { error: 'MISSING_TOKEN' });
-  }
-
-  // 2) 본문 검증 — confirm 일치
+export const POST = withAuth(async (req, { uid, decoded }) => {
+  // 1) 본문 검증 — confirm 일치
   let body: unknown;
   try {
     body = await req.json();
@@ -83,27 +79,13 @@ export async function POST(req: Request) {
     return jsonError(400, { error: 'INVALID_BODY' });
   }
 
-  // 3) ID 토큰 검증 (revoked check 포함)
-  let uid: string;
-  let authTimeSec: number;
-  try {
-    const decoded = await adminAuth().verifyIdToken(token, true);
-    uid = decoded.uid;
-    authTimeSec = decoded.auth_time;
-  } catch {
-    // revoked, expired, malformed 모두 동일하게 INVALID_TOKEN으로 처리 (PII/공격 표면 최소화).
-    // 세부 에러코드(auth/id-token-revoked 등)는 서버 로그로만 남기지 않음 — 호출자에게는
-    // 차이를 노출할 이점이 없고, 균일 응답이 정찰 공격을 차단한다.
-    return jsonError(401, { error: 'INVALID_TOKEN' });
-  }
-
-  // 4) 재인증 강제 — 토큰의 auth_time이 5분 이내여야 함
+  // 2) 재인증 강제 — 토큰의 auth_time이 5분 이내여야 함
   const nowSec = Math.floor(Date.now() / 1000);
-  if (nowSec - authTimeSec > REAUTH_WINDOW_SECONDS) {
+  if (nowSec - decoded.auth_time > REAUTH_WINDOW_SECONDS) {
     return jsonError(401, { error: 'REAUTH_REQUIRED' });
   }
 
-  // 5) 순차 삭제 — 단계별 진행 상태 추적
+  // 3) 순차 삭제 — 단계별 진행 상태 추적
   const completed: Stage[] = [];
   let failedStage: Stage | null = null;
   let failureMessage = '';
@@ -139,7 +121,6 @@ export async function POST(req: Request) {
   // 1~3 단계 중 실패가 있으면 auth delete는 스킵.
   // (사용자 계정만 사라지고 데이터가 남으면 사용자 입장에서 복구 불가)
   if (failedStage) {
-    // 콘솔 로그는 Vercel Function 로그로 수집 — 요청자에게는 PII 미노출
     console.error(
       `[account/delete] partial failure at stage="${failedStage}": ${failureMessage}`,
     );
@@ -172,5 +153,8 @@ export async function POST(req: Request) {
     meta: { stages: completed.length },
   });
 
-  return NextResponse.json({ deleted: true }, { status: 200 });
-}
+  return NextResponse.json(
+    { deleted: true },
+    { status: 200, headers: NO_STORE_HEADERS },
+  );
+});

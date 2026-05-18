@@ -287,9 +287,17 @@ users/{uid}/dailyRecords/{yyyy-mm-dd}
 - `users/{uid}/consents/{policyVersion}` 서브컬렉션에 동의 시점·항목·채널 기록
 - 향후 처리방침 개정 시 `consentStatus = 'pending'`으로 일괄 전환 → 재로그인 시 재동의
 
-### 10.6 미들웨어 가드
-- `consentStatus !== 'agreed'`인 사용자는 `/signup/consent`·`/login`·`/signup` 외 모든 경로 차단
-- Signed URL Function도 토큰 검증 후 `consentStatus` 확인 → `pending`이면 403
+### 10.6 다층 가드 (Defense in Depth)
+- `consentStatus !== 'agreed'` 사용자 차단은 **3중 방어선**으로 강제한다:
+  1. **Firestore / Storage Rules** — 본인 uid 일치 + consent 조건. 데이터 경계의 진짜 차단점
+  2. **API 라우트의 `withAuth` / `withConsent` wrapper** (`lib/api/auth.ts`) — 모든 보호 라우트는 wrapper를 통과한다. `verifyIdToken(token, true)` revoked check + `users/{uid}.sensitivePhotoVersion != null` 게이트
+  3. **클라이언트 `useRequireAuth`** (`lib/auth/useRequireAuth.ts`) — in-app 레이아웃 마운트 시 라우팅 가드
+- Next.js 미들웨어(`proxy.ts`) 전역 auth 가드는 **현 단계에서 도입하지 않는다** — 이유:
+  - Native(Android/iOS)에는 미들웨어 개념이 없어 멀티플랫폼 일관성을 해친다
+  - Edge Runtime에서 firebase-admin 미지원 → Node Runtime 강제 → 콜드스타트 + 매 요청 Firestore read
+  - 현재 SSR data fetch가 없어 정적 페이지 SSG 이점이 더 크다
+- 도입 트리거 (재검토 시점): (a) SSR로 prerender하는 사용자별 페이지 도입, (b) 보호 API 라우트가 10개 이상, (c) Open Graph 메타가 사용자별로 다이나믹 — 위 중 하나라도 발생 시 세션 쿠키 + 미들웨어 가드 도입을 재평가한다
+- 신규 보호 라우트 추가 시 **반드시** `withAuth` 또는 `withConsent` wrapper를 거친다. wrapper 미경유 보호 라우트는 코드 리뷰에서 차단
 
 ### 10.7 동의 철회
 - 마이페이지 "민감정보 동의 철회" = 사실상 탈퇴 (사진이 핵심 기능)

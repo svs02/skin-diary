@@ -158,6 +158,20 @@ export function PhotoCapture({
 
   const commitUpload = useCallback(
     async (angle: Angle, blob: Blob) => {
+      // 같은 angle에 5초 grace pending delete가 있으면 commit 전에 취소.
+      // 의도: 사용자가 삭제 직후 같은 자리에 새 사진을 올렸다는 건 삭제 의도를
+      // 폐기한 것 — 5초 후 fire될 delete가 방금 업로드한 사진을 지우는 race를 막는다.
+      const pendingTimer = deleteTimersRef.current[angle];
+      if (pendingTimer) {
+        clearTimeout(pendingTimer);
+        delete deleteTimersRef.current[angle];
+        setPendingDeletes((prev) => {
+          if (!prev.has(angle)) return prev;
+          const next = new Set(prev);
+          next.delete(angle);
+          return next;
+        });
+      }
       setTransient((p) => ({ ...p, [angle]: { state: 'uploading' } }));
       // Spec §4.3.c — uploading 토스트 (info 톤)
       toast.info(tToast('uploading'));

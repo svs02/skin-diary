@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState, type ReactNode } from 'react';
+import { useEffect, useRef, useState, type ReactNode } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useTranslations } from 'next-intl';
@@ -24,15 +24,16 @@ import { useToast } from '@/lib/toast';
  * consent fields are null). We force them through this page before any
  * in-app navigation.
  *
- * Two terminal actions:
- *   1. Agree → `applyDeferredConsent()` → `/today`
- *   2. Cancel → `POST /api/account/abandon-signup` → `signOut()` → `/login`
+ * Three terminal actions:
+ *   1. Agree   → `applyDeferredConsent()` → `/today`
+ *   2. Cancel  → `POST /api/account/abandon-signup` → `signOut()` → `/login`
+ *   3. Unload  → fire-and-forget `POST /api/account/abandon-signup` with
+ *                `keepalive: true` so the request outlives the page. Covers
+ *                tab close / browser back / refresh per CLAUDE.md §10.4.
  *
- * Best-effort cleanup on page unload (sendBeacon) is intentionally NOT wired
- * here. The user-facing "Cancel sign-up" button is the primary path; if a
- * user navigates away another way, they'll hit this gate again on next
- * sign-in (the deferred state persists), so they're never silently stuck
- * in a half-signed-up state.
+ * The unload path uses a cached ID token (synchronously read in the
+ * `pagehide` handler) and an `abandonOnUnloadRef` guard so an in-flight
+ * Agree submission is never racing the unload abandon.
  */
 export default function SignupConsentPage() {
   const t = useTranslations('signup.consent');
@@ -51,6 +52,16 @@ export default function SignupConsentPage() {
   const [submitting, setSubmitting] = useState(false);
   const [abandoning, setAbandoning] = useState(false);
 
+  // Cached ID token for the pagehide handler. Read synchronously on unload —
+  // an `await user.getIdToken()` there would lose the chance to fire before
+  // the page is gone. Consent sessions are short (<<1h token TTL) so a single
+  // mount-time fetch is enough.
+  const tokenRef = useRef<string | null>(null);
+  // True while the user is in the "pending consent" state and an unload should
+  // wipe their account. Flipped to false the moment they commit to Agree or
+  // explicitly Cancel — re-enabled on failure of those paths.
+  const abandonOnUnloadRef = useRef(true);
+
   const toggleAllConsent = (next: boolean) => {
     setConsentTerms(next);
     setConsentPrivacy(next);
@@ -68,13 +79,71 @@ export default function SignupConsentPage() {
       router.replace('/login');
       return;
     }
-    if (hasFullConsent === true) router.replace('/today');
+    if (hasFullConsent === true) {
+      // The user has already consented (e.g., they returned to this page after
+      // completing signup elsewhere). Disable the unload abandon so navigation
+      // away to /today doesn't wipe a fully-consented account.
+      abandonOnUnloadRef.current = false;
+      router.replace('/today');
+    }
   }, [user, authLoading, hasFullConsent, router]);
+
+  // Cache the current ID token. `getIdToken(false)` returns the cached value
+  // when fresh, so this is usually a synchronous resolve.
+  useEffect(() => {
+    if (!user) {
+      tokenRef.current = null;
+      return;
+    }
+    let cancelled = false;
+    user
+      .getIdToken(false)
+      .then((t) => {
+        if (!cancelled) tokenRef.current = t;
+      })
+      .catch(() => {
+        /* token refresh failure: unload abandon will silently skip */
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [user]);
+
+  // Fire-and-forget abandon when the user navigates away without an explicit
+  // decision. `fetch` with `keepalive: true` is the modern replacement for
+  // sendBeacon when custom headers (Authorization) are required; both Chrome,
+  // Firefox, and Safari let the request outlive the document.
+  useEffect(() => {
+    if (!user) return;
+    const onPageHide = (e: PageTransitionEvent) => {
+      // `persisted=true` means the page is entering the back-forward cache
+      // (Safari/iOS) — the user hasn't truly left, they may scrub back any
+      // moment. Wiping the account here would be a false-abandon.
+      if (e.persisted) return;
+      if (!abandonOnUnloadRef.current) return;
+      const token = tokenRef.current;
+      if (!token) return;
+      try {
+        void fetch('/api/account/abandon-signup', {
+          method: 'POST',
+          headers: { Authorization: `Bearer ${token}` },
+          keepalive: true,
+        }).catch(() => {});
+      } catch {
+        /* unload-context errors are unrecoverable; swallow */
+      }
+    };
+    window.addEventListener('pagehide', onPageHide);
+    return () => window.removeEventListener('pagehide', onPageHide);
+  }, [user]);
 
   const handleSubmit = async () => {
     if (!user || submitting) return;
     if (!allConsented) return;
     setSubmitting(true);
+    // From this moment the user is committing to consent — a tab close mid-
+    // request must not also fire an abandon that races our Firestore write.
+    abandonOnUnloadRef.current = false;
     try {
       await applyDeferredConsent({
         uid: user.uid,
@@ -90,6 +159,9 @@ export default function SignupConsentPage() {
       // explicitly so the success path isn't dependent on listener timing.
       router.replace('/today');
     } catch {
+      // Submission failed — restore the unload abandon so the user can still
+      // exit cleanly without leaving a pending account behind.
+      abandonOnUnloadRef.current = true;
       toast.alert(tLogin('errorGeneric'));
       setSubmitting(false);
     }
@@ -103,6 +175,7 @@ export default function SignupConsentPage() {
       typeof window !== 'undefined' ? window.confirm(t('abandonConfirm')) : true;
     if (!ok) return;
     setAbandoning(true);
+    abandonOnUnloadRef.current = false;
     try {
       const token = await user.getIdToken(true);
       const res = await fetch('/api/account/abandon-signup', {
@@ -117,6 +190,7 @@ export default function SignupConsentPage() {
       }
       router.replace('/login');
     } catch {
+      abandonOnUnloadRef.current = true;
       toast.alert(t('abandonError'));
       setAbandoning(false);
     }

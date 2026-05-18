@@ -118,10 +118,14 @@ export function useCompareData(
         ] as const)
       : null;
 
+  // URL은 10분 TTL이라 방치된 탭으로 돌아왔을 때 만료되어 있을 수 있다.
+  // revalidateOnFocus로 다시 fetcher를 돌리면 signedUrl.ts의 모듈 캐시가
+  // HIT_BUFFER_MS=60s 전부터 miss로 판정해 자동 재발급한다 — 만료 전이면
+  // 캐시 hit으로 서버 호출 0. records SWR은 변경 빈도가 낮아 false 유지.
   const urls = useSWR<{ from: string | null; to: string | null }>(
     urlsKey,
     (key) => photoUrlsFetcher(key as PhotoUrlsKey),
-    { revalidateOnFocus: false, dedupingInterval: 30_000 },
+    { revalidateOnFocus: true, dedupingInterval: 30_000 },
   );
 
   // 사진이 없는 쪽은 url=null로 즉시 결정 (loading 아님).

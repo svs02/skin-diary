@@ -22,6 +22,7 @@ import {
 } from 'firebase/auth';
 import { useRouter } from 'next/navigation';
 import { auth } from '@/lib/firebase/client';
+import { clearSdLocalStorage } from '@/lib/storage/clearLocalStore';
 import { useToast } from '@/lib/toast';
 
 /**
@@ -198,6 +199,10 @@ export function DeleteAccountDialog({ open, user, onClose }: Props) {
   }
 
   async function finalizeSuccess() {
+    // sd:* prefix 키 전수 정리 — 이전 사용자 draft 누수 + 동일 디바이스 재가입자에게
+    // onboarding 미노출 회귀 방지 (onboarding/hint 카운터는 uid-agnostic이라 잔류 시
+    // 새 사용자 경험이 손상된다).
+    clearSdLocalStorage();
     try {
       await signOut(auth);
     } catch {

@@ -33,6 +33,28 @@ You can start editing the page by modifying `app/page.tsx`. The page auto-update
 
 This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
 
+## Testing
+
+세 종류의 테스트가 있다. 모두 dev 의존성만 사용한다.
+
+```bash
+# 1) Unit — 순수 함수. 외부 서비스 없음.
+pnpm test            # = pnpm test:unit
+
+# 2) Firestore Rules — 권한 매트릭스. Firebase Emulator 필요.
+#    별도 셸에서 emulator 부팅:
+#      brew install firebase-tools   # (또는) npm i -g firebase-tools
+#      pnpm emulators
+pnpm test:rules
+
+# 3) E2E — 브라우저 시나리오. `webServer`가 `pnpm dev`를 자동 부팅.
+#    `.env.local`에 NEXT_PUBLIC_FIREBASE_* 키가 있어야 한다.
+pnpm test:e2e
+```
+
+새 테스트는 `tests/{unit,rules,e2e}/` 하위에 추가한다. Vitest는 `*.test.ts`,
+Playwright는 `*.spec.ts` 패턴을 사용한다.
+
 ## Learn More
 
 To learn more about Next.js, take a look at the following resources:

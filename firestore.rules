@@ -227,6 +227,18 @@ service cloud.firestore {
       allow write: if false;
     }
 
+    // -- Rate limit counters ------------------------------------------------
+    //
+    // Per-uid fixed-window counters maintained by Vercel Functions (Admin SDK).
+    // Clients must never read or write these — disclosing counts would help an
+    // attacker calibrate evasion. Admin SDK bypasses rules.
+    //
+    // Document shape (server-only): { count: int, expiresAt: timestamp }
+    // Doc ID format: `{scope}_{uid}_{bucket}` (see lib/audit/rateLimit.ts).
+    match /rateLimits/{docId} {
+      allow read, write: if false;
+    }
+
     // Default deny for anything else.
     match /{document=**} {
       allow read, write: if false;
