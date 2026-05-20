@@ -71,3 +71,6 @@ playwright/.cache/
 
 # Generic logs
 *.log
+
+# Local markdown scratch folder
+/.md/
